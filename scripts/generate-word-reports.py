@@ -9,7 +9,7 @@ from docx.enum.table import WD_TABLE_ALIGNMENT, WD_CELL_VERTICAL_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
-from docx.shared import Inches, Pt, RGBColor
+from docx.shared import Inches, Pt, RGBColor, Twips
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -18,6 +18,8 @@ OUT_DIR = ROOT / "public" / "reports"
 REPORT_DATE = "2026-07-23"
 SNAPSHOT_DATE = "2026-07-23"
 COMTRADE = "UN Comtrade 2025 / monthly API, HS 2022 (H6)"
+TABLE_WIDTH_DXA = 9360
+TABLE_INDENT_DXA = 120
 
 
 def block_after(source: str, marker: str) -> str:
@@ -180,6 +182,8 @@ def set_run_font(run, size: float | None = None, bold: bool | None = None, color
 
 def style_document(doc: Document, title: str):
     section = doc.sections[0]
+    section.page_width = Inches(8.5)
+    section.page_height = Inches(11)
     section.top_margin = Inches(1)
     section.bottom_margin = Inches(1)
     section.left_margin = Inches(1)
@@ -190,6 +194,8 @@ def style_document(doc: Document, title: str):
     styles = doc.styles
     normal = styles["Normal"]
     normal.font.name = "Microsoft YaHei"
+    normal._element.rPr.rFonts.set(qn("w:ascii"), "Microsoft YaHei")
+    normal._element.rPr.rFonts.set(qn("w:hAnsi"), "Microsoft YaHei")
     normal._element.rPr.rFonts.set(qn("w:eastAsia"), "Microsoft YaHei")
     normal.font.size = Pt(11)
     normal.paragraph_format.space_after = Pt(6)
@@ -202,6 +208,8 @@ def style_document(doc: Document, title: str):
     ]:
         style = styles[name]
         style.font.name = "Microsoft YaHei"
+        style._element.rPr.rFonts.set(qn("w:ascii"), "Microsoft YaHei")
+        style._element.rPr.rFonts.set(qn("w:hAnsi"), "Microsoft YaHei")
         style._element.rPr.rFonts.set(qn("w:eastAsia"), "Microsoft YaHei")
         style.font.size = Pt(size)
         style.font.color.rgb = RGBColor.from_string(color)
@@ -246,18 +254,71 @@ def set_cell_text(cell, text: str, bold: bool = False, color: str = "000000"):
     set_run_font(run, 9.5, bold, color)
 
 
+def set_table_geometry(table, widths: list[int]):
+    if sum(widths) != TABLE_WIDTH_DXA:
+        raise ValueError(f"Table widths must total {TABLE_WIDTH_DXA}: {widths}")
+    table.autofit = False
+    table.allow_autofit = False
+    tbl_pr = table._tbl.tblPr
+    for tag in ("w:tblW", "w:tblInd", "w:tblLayout", "w:tblCellMar"):
+        for element in list(tbl_pr.findall(qn(tag))):
+            tbl_pr.remove(element)
+
+    tbl_w = OxmlElement("w:tblW")
+    tbl_w.set(qn("w:w"), str(TABLE_WIDTH_DXA))
+    tbl_w.set(qn("w:type"), "dxa")
+    tbl_pr.append(tbl_w)
+    tbl_ind = OxmlElement("w:tblInd")
+    tbl_ind.set(qn("w:w"), str(TABLE_INDENT_DXA))
+    tbl_ind.set(qn("w:type"), "dxa")
+    tbl_pr.append(tbl_ind)
+    layout = OxmlElement("w:tblLayout")
+    layout.set(qn("w:type"), "fixed")
+    tbl_pr.append(layout)
+    margins = OxmlElement("w:tblCellMar")
+    for edge, value in (("top", 80), ("start", 120), ("bottom", 80), ("end", 120)):
+        node = OxmlElement(f"w:{edge}")
+        node.set(qn("w:w"), str(value))
+        node.set(qn("w:type"), "dxa")
+        margins.append(node)
+    tbl_pr.append(margins)
+
+    grid = table._tbl.tblGrid
+    for child in list(grid):
+        grid.remove(child)
+    for width in widths:
+        col = OxmlElement("w:gridCol")
+        col.set(qn("w:w"), str(width))
+        grid.append(col)
+    for row in table.rows:
+        for index, cell in enumerate(row.cells):
+            cell.width = Twips(widths[index])
+            tc_pr = cell._tc.get_or_add_tcPr()
+            tc_w = tc_pr.first_child_found_in("w:tcW")
+            if tc_w is None:
+                tc_w = OxmlElement("w:tcW")
+                tc_pr.append(tc_w)
+            tc_w.set(qn("w:w"), str(widths[index]))
+            tc_w.set(qn("w:type"), "dxa")
+
+
+def repeat_table_header(row):
+    tr_pr = row._tr.get_or_add_trPr()
+    marker = OxmlElement("w:tblHeader")
+    marker.set(qn("w:val"), "true")
+    tr_pr.append(marker)
+
+
 def add_metadata_table(doc: Document, rows: list[tuple[str, str]]):
     table = doc.add_table(rows=len(rows), cols=2)
     table.alignment = WD_TABLE_ALIGNMENT.LEFT
     table.style = "Table Grid"
-    table.autofit = False
     for row_index, (label, value) in enumerate(rows):
         cells = table.rows[row_index].cells
-        cells[0].width = Inches(1.6)
-        cells[1].width = Inches(4.8)
         shade_cell(cells[0], "F2F4F7")
         set_cell_text(cells[0], label, True, "1F4D78")
         set_cell_text(cells[1], value)
+    set_table_geometry(table, [2300, 7060])
     doc.add_paragraph()
 
 
@@ -288,36 +349,61 @@ def commodity_report_doc(record: dict, report: dict, accuracy: dict) -> Document
     )
 
     doc.add_heading("一、核心判断", level=1)
-    doc.add_paragraph(report.get("executive") or f"{record['name']}在 2025 年的对华来源占比为 {record['share']:.1f}%，应结合企业采购、原产地证书和 HS8 单证继续验证。")
+    concentration = "高度集中" if record["share"] >= 75 else "较高" if record["share"] >= 50 else "中等" if record["share"] >= 20 else "较低"
+    doc.add_paragraph(
+        f"2025 年，印度进口“{record['name']}”中来自中国的金额占比为 {record['share']:.1f}%，"
+        f"按本报告阈值属于{concentration}。该判断严格限定于 HS 2022 六位商品编码 {record['hs']}，"
+        "不外推至父级税目、具体企业或受控技术参数。"
+    )
 
     doc.add_heading("二、数据事实", level=1)
     data_points = report.get("data_points") or [
         f"2025 年印度自中国进口 {money_billions(record['china'])}，全球进口 {money_billions(record['world'])}，对华来源占比 {record['share']:.1f}%。",
         f"页面和报告均使用真实的 {record['stat_level']} {record['hs8']}；不补零、不使用父级大类代理金额。",
-        f"主要替代供应国或地区包括：{'、'.join(record['alternatives'])}。",
+        f"剔除中国后，2025 年其他主要供应来源为：{'、'.join(record['alternatives']) if record['alternatives'] else '未报告其他境外来源'}。",
     ]
     add_bullets(doc, data_points)
 
     doc.add_heading("三、分析", level=1)
     analysis = report.get("analysis") or [
-        "该品类的公开贸易数据能够用于识别来源集中度，但不足以替代企业级 BOM、合同、发票、原产地证书和物流单证。",
-        "对第三国路径的判断应区分实质加工、区域分销、库存调拨和简单转运；金额同步变化只能作为筛查信号。",
+        f"印度自中国进口 {money_billions(record['china'])}，相对于该商品进口总额 {money_billions(record['world'])}；比例使用未舍入金额计算，页面显示值仅作四舍五入。",
+        "其他供应来源按同一 HS6、同一报告国、同一年度的进口金额排序。它们说明采购来源结构，不等于已经具备同等产能、认证、交付周期或价格条件。",
+        "公开贸易数据能够识别来源集中度，但不足以替代企业级 BOM、合同、发票、原产地证书和物流单证。对受控物项还必须核对技术参数、最终用户和最终用途。",
     ]
     for paragraph in analysis:
         doc.add_paragraph(paragraph)
 
     doc.add_heading("四、第三国路径与判读边界", level=1)
-    doc.add_paragraph(report.get("route_boundary") or "当前公开数据仅能提供路径筛查信号，不构成转口事实认定。")
+    doc.add_paragraph(
+        f"当前未取得与 HS6 {record['hs']} 完全同口径且能够对应同一批货物的逐段单证闭环。"
+        "即使中国至一个或多个中转国、再至印度的双边金额在同一时期同步上升，也只能作为核验线索；"
+        "必须再用提单、原产地证书、发票、加工记录或公开查发案例确认。"
+    )
 
     doc.add_heading("五、结论", level=1)
-    doc.add_paragraph(report.get("conclusion") or f"{record['name']}应作为供应链依赖监测对象，结论准确度为 {accuracy.get('level', '高概率')}。后续需用 HS8 与业务单证校验。")
+    conclusion = (
+        f"{record['name']}对华进口来源集中度{concentration}，应"
+        f"{'列入优先核验清单' if record['share'] >= 50 else '保持常态监测'}。"
+        f"本结论准确度标注为“{accuracy.get('level', '高概率')}”，仅适用于 HS6 {record['hs']} 的 2025 年进口来源结构；"
+        "后续若取得中国海关 HS8、企业料号和业务单证，应在不改变国际 HS6 可比口径的前提下进一步下钻。"
+    )
+    doc.add_paragraph(conclusion)
 
     doc.add_heading("六、后续监测重点", level=1)
-    monitoring = report.get("monitoring") or ["HS8 单证与企业采购数据", "原产国、装运国与发票国差异", "月度进口额和对华占比异常波动"]
+    monitoring = [
+        f"HS6 {record['hs']} 的月度进口金额、数量和对华来源占比",
+        "中国海关 HS8、企业料号与印度本国八位税号映射",
+        "原产国、装运国、发票国、提单路径与实际加工工序",
+        "出口许可证、技术参数、最终用户和最终用途变化",
+    ]
     add_bullets(doc, monitoring)
 
     doc.add_heading("七、来源", level=1)
-    references = report.get("references") or [COMTRADE, "印度 DGCI&S TradeStat", "项目页面公开研究口径说明"]
+    references = [
+        f"UN Comtrade 公共 API：reporterCode=699（印度）、partnerCode=0/156、flowCode=M、cmdCode={record['hs']}、period=2025；访问 {SNAPSHOT_DATE}。",
+        "印度 DGCI&S TradeStat：月度贸易数据库与编码调整说明。",
+        "中国商务部、海关总署及中国出口管制信息网：现行两用物项清单、公告与许可证管理目录。",
+    ]
     add_bullets(doc, references)
     doc.add_paragraph("注：本报告用于公开来源研究和合规初筛，不构成法律意见或个案事实认定。")
     return doc
@@ -340,7 +426,11 @@ def overall_report_doc(records: list[dict]) -> Document:
         ],
     )
     doc.add_heading("一、总览结论", level=1)
-    doc.add_paragraph("样本显示，印度对中国的进口来源依赖集中在蓄电池、含氮/含氧化工品、半导体器件、电力设备、工程机械零部件及部分工程车辆。8 位编码用于后续业务单证对齐，公开统计金额仍应按来源可复核层级阅读。")
+    doc.add_paragraph(
+        f"本报告汇总 {len(records)} 个互不重叠的 HS 2022 六位商品物项。2025 年这些商品自中国进口合计"
+        f" {money_billions(china_total)}，商品进口总额合计 {money_billions(world_total)}，加权对华来源占比为"
+        f" {china_total / world_total * 100:.1f}%。矩阵不计入 HS31、HS4 或专题父级金额，也不使用补零八位码。"
+    )
     doc.add_paragraph("第三国路径应作为筛查信号而非事实认定。报告中的多节点路径允许出现两至三个中转经济体，但只有在金额、时间、产品、原产地和物流单证闭合后，才能进入个案判断。")
 
     doc.add_heading("二、重点商品表", level=1)
@@ -351,6 +441,7 @@ def overall_report_doc(records: list[dict]) -> Document:
     for index, header in enumerate(headers):
         shade_cell(table.rows[0].cells[index], "F2F4F7")
         set_cell_text(table.rows[0].cells[index], header, True, "1F4D78")
+    repeat_table_header(table.rows[0])
     for record in sorted(records, key=lambda item: item["share"], reverse=True):
         row = table.add_row().cells
         values = [
@@ -363,17 +454,19 @@ def overall_report_doc(records: list[dict]) -> Document:
         ]
         for index, value in enumerate(values):
             set_cell_text(row[index], value)
+    set_table_geometry(table, [2200, 1080, 1480, 1500, 1500, 1600])
 
     doc.add_heading("三、化肥专题", level=1)
     doc.add_paragraph("化肥应按总项和子项分开。HS31 总项用于观察整体暴露；尿素、DAP、MOP、NPK 分别对应不同采购周期、替代来源和政策敏感性，财年数量与自然年价值不可直接混算。")
     doc.add_heading("四、工程设备专题", level=1)
-    doc.add_paragraph("盾构机、工程车和工程机械零部件均已进入重点商品矩阵。盾构机税号为筛查池，工程车按非公路用自卸车、汽车起重机和混凝土搅拌车拆分；镜像贸易差异是审计触发器，不是转口证明。")
+    doc.add_paragraph("工程设备专题以 HS 843031、843039、870410、870510、870540 和 843143 等法定六位商品物项分别统计。专题标题仅作导航；其中 HS 843031/843039 还包含采煤机和截岩机，不能把税目金额直接称为盾构机成交额或台数。镜像贸易差异是审计触发器，不是转口证明。")
     doc.add_heading("五、方法与限制", level=1)
     add_bullets(
         doc,
         [
             "依赖率 = 印度自中国进口额 ÷ 印度全球进口额。",
-            "8 位码用于业务数据验证；公开统计层级不足时，仍标注 HS31、HS4 或 HS6 合并口径。",
+            "公开统计统一使用真实 HS 2022 六位商品编码；不补零、不使用父级大类或代理金额。中国 HS8 仅在取得海关或企业业务数据后用于向下映射。",
+            f"自动审计逐项核对 {len(records)} 个商品的 2025 年世界/中国进口额、12 个月月度合计及其他供应国排序，并使用缓存、限速和 429 自动重试。",
             "结论准确度分为高概率、低概率、推测，表示公开证据强弱，不代表法律结论。",
             "本报告不对违法转口、规避关税或规避出口管制作事实认定。",
         ],

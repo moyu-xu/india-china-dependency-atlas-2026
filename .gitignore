@@ -12,3 +12,5 @@ dist/
 Thumbs.db
 .idea/
 .vscode/
+__pycache__/
+.cache/

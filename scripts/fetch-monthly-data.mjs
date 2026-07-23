@@ -1,10 +1,12 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 
 const API = "https://comtradeapi.un.org/public/v1/preview/C/M/HS";
 const REQUIRED_CLASSIFICATION = "H6"; // UN Comtrade code for HS 2022.
 const OUTPUT = resolve("src/data/monthlyTrade.ts");
+const CACHE_DIR = resolve(".cache/monthly-trade");
 const ACCESS_DATE = new Date().toISOString().slice(0, 10);
+const REQUEST_DELAY_MS = 1400;
 
 const commodities = {
   ic: "854231",
@@ -43,6 +45,14 @@ for (let year = 2024, month = 12; year < 2026 || (year === 2026 && month <= 6);)
 const delay = (milliseconds) => new Promise((resolveDelay) => setTimeout(resolveDelay, milliseconds));
 
 async function fetchPeriod(period, attempt = 1) {
+  await mkdir(CACHE_DIR, { recursive: true });
+  const codeKey = [...new Set(Object.values(commodities).flat())].sort().join("-");
+  const cacheFile = resolve(CACHE_DIR, `${period}_699_0-156_M_${codeKey}.json`);
+  try {
+    return JSON.parse(await readFile(cacheFile, "utf8"));
+  } catch {
+    // Cache miss.
+  }
   const params = new URLSearchParams({
     period,
     reporterCode: "699",
@@ -54,11 +64,18 @@ async function fetchPeriod(period, attempt = 1) {
     motCode: "0",
     maxRecords: "500",
   });
+  await delay(REQUEST_DELAY_MS);
   try {
     const response = await fetch(`${API}?${params}`, {
       headers: { "user-agent": "india-china-dependency-atlas/2.0" },
       signal: AbortSignal.timeout(45_000),
     });
+    if (response.status === 429) {
+      const retryAfter = Number(response.headers.get("retry-after") ?? 2);
+      if (attempt >= 6) throw new Error(`HTTP 429 after ${attempt} attempts`);
+      await delay(Math.max(retryAfter * 1000, attempt * 2000));
+      return fetchPeriod(period, attempt + 1);
+    }
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const payload = await response.json();
     if (payload.error) throw new Error(payload.error);
@@ -67,11 +84,13 @@ async function fetchPeriod(period, attempt = 1) {
       const versions = [...new Set(incompatible.map((row) => row.classificationCode))].join(", ");
       throw new Error(`Expected HS 2022 (${REQUIRED_CLASSIFICATION}), received: ${versions}`);
     }
+    const result = { accessedAt: new Date().toISOString(), query: Object.fromEntries(params), data: payload.data ?? [] };
+    await writeFile(cacheFile, JSON.stringify(result, null, 2), "utf8");
     console.log(`${period}: ${payload.count} records`);
-    return payload.data;
+    return result;
   } catch (error) {
-    if (attempt >= 3) throw error;
-    await delay(attempt * 1500);
+    if (attempt >= 6) throw error;
+    await delay(attempt * 2000);
     return fetchPeriod(period, attempt + 1);
   }
 }
@@ -103,7 +122,7 @@ function render(results) {
       const worldRows = records.filter((row) => row.partnerCode === 0);
       const chinaRows = records.filter((row) => row.partnerCode === 156);
       const period = `${result.period.slice(0, 4)}-${result.period.slice(4)}`;
-      if (worldRows.length === 0) {
+      if (!result.published) {
         lines.push(`    { period: \"${period}\", china: null, world: null, share: null, status: \"pending\" },`);
         continue;
       }
@@ -120,8 +139,8 @@ function render(results) {
 
 const results = [];
 for (const { period } of months) {
-  results.push({ period, data: await fetchPeriod(period) });
-  await delay(350);
+  const payload = await fetchPeriod(period);
+  results.push({ period, data: payload.data, published: payload.data.length > 0 });
 }
 
 await mkdir(dirname(OUTPUT), { recursive: true });

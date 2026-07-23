@@ -3,7 +3,7 @@ import { MONTHLY_SOURCE_ACCESSED, MONTHLY_SOURCE_LABEL, MONTHLY_SOURCE_URL, mont
 
 type Category = "全部" | "原材料" | "医药化工" | "电子与电力" | "工业机械" | "工程设备" | "车辆零部件";
 type TrendPoint = { year: string; china: number; world: number; share: number };
-type EvidenceLevel = "中等" | "中等偏低" | "低";
+type EvidenceLevel = "已复核" | "中等" | "中等偏低" | "低";
 type AccuracyLevel = "高概率" | "低概率" | "推测";
 
 type RoutePath = {
@@ -37,6 +37,7 @@ type ChinaHs8Profile = {
   controlParameters: string;
   controlEffective: string;
 };
+type ChinaControlMeta = Pick<ChinaHs8Profile, "controlCategory" | "controlStatus" | "controlParameters" | "controlEffective">;
 
 export type CommodityRecord = {
   id: string;
@@ -46,7 +47,7 @@ export type CommodityRecord = {
   english: string;
   category: Exclude<Category, "全部">;
   completeYear: { period: "2025"; china: number; world: number; share: number; source: "UN Comtrade" };
-  latestPulse: { period: "2026-01—05"; china: null; world: null; share: null; completeness: "已发布，待 HS4 复核"; source: "India TradeStat" };
+  latestPulse: { period: "2026-01—05"; china: null; world: null; share: null; completeness: "官方库已发布，逐项以月度图为准"; source: "India TradeStat" };
   alternatives: string[];
   definition: string;
   sourcePublished: string;
@@ -81,8 +82,10 @@ export type RouteSignal = {
   directToIndia: [number, number];
   reliability: "高" | "中" | "低";
   evidence: string;
+  methodSteps: string[];
   inference: string;
   caveat: string;
+  sourceDetail: string;
   source: string;
 };
 
@@ -91,10 +94,15 @@ export type RouteNetworkSignal = {
   product: string;
   hs: string;
   nodes: string[];
+  coverage: "2023→2024";
+  legs: { label: string; values: [number, number] }[];
+  directToIndia: [number, number];
   reliability: "高" | "中" | "低";
   evidence: string;
+  methodSteps: string[];
   inference: string;
   caveat: string;
+  sourceDetail: string;
   source: string;
 };
 
@@ -107,22 +115,23 @@ const TRADESTAT = "https://tradestat.commerce.gov.in/meidb/commodity_wise_all_co
 const TIA = "https://trade-analytics.commerce.gov.in/public";
 const CONTROL_RULE = "https://xzfg.moj.gov.cn/front/law/detail?LawID=1735&Query=";
 const CONTROL_CATALOG = "https://exportcontrol.mofcom.gov.cn/article/hgfw/lywxcx/gzqd/202601/1203.html";
+const CUSTOMS_CASE = "https://gujaratcustoms.gov.in/juridictional_commissionerate/public/storage/pdfs/7bRyuZebEmCGU3qLJ13vFhyHyoz2Nl3QpOWhUIz6.pdf";
 
 const categories: Category[] = ["全部", "原材料", "医药化工", "电子与电力", "工业机械", "工程设备", "车辆零部件"];
-const pulse = { period: "2026-01—05", china: null, world: null, share: null, completeness: "已发布，待 HS4 复核", source: "India TradeStat" } as const;
+const pulse = { period: "2026-01—05", china: null, world: null, share: null, completeness: "官方库已发布，逐项以月度图为准", source: "India TradeStat" } as const;
 const annual = (china: number, world: number) => ({ period: "2025", china, world, share: china / world * 100, source: "UN Comtrade" } as const);
-const chinaHs8Profile: Record<string, ChinaHs8Profile> = {
-  fertilizer_urea: { codes:["31021000"], scope:"精确 HS8", mappingNote:"中国 HS2022 细分；印度端需保留本国 8 位编码并做 HS6 对照。", countryMappings:[{country:"印度",code:"310210",version:"India HS 2022",reliability:"中"}], controlCategory:"化肥/农资", controlStatus:"未列为重点管制筛查", controlParameters:"产品成分、用途与许可证政策", controlEffective:"现行目录" },
-  fertilizer_dap: { codes:["31053000"], scope:"精确 HS8", mappingNote:"中国 HS2022 细分；跨国公开统计通常只能稳定对齐至 HS6。", countryMappings:[{country:"印度",code:"310530",version:"India HS 2022",reliability:"中"}], controlCategory:"化肥/农资", controlStatus:"未列为重点管制筛查", controlParameters:"产品成分、用途与许可证政策", controlEffective:"现行目录" },
-  fertilizer_mop: { codes:["31042000"], scope:"精确 HS8", mappingNote:"中国 HS2022 细分；跨国公开统计通常只能稳定对齐至 HS6。", countryMappings:[{country:"印度",code:"310420",version:"India HS 2022",reliability:"中"}], controlCategory:"化肥/农资", controlStatus:"未列为重点管制筛查", controlParameters:"产品成分、用途与许可证政策", controlEffective:"现行目录" },
-  fertilizer_npk: { codes:["31052000"], scope:"精确 HS8", mappingNote:"中国 HS2022 细分；印度官方 NPK 统计可能覆盖更宽子目。", countryMappings:[{country:"印度",code:"310520",version:"India HS 2022",reliability:"中"}], controlCategory:"化肥/农资", controlStatus:"未列为重点管制筛查", controlParameters:"产品成分、用途与许可证政策", controlEffective:"现行目录" },
-  tunnel_843031: { codes:["84303100"], scope:"精确 HS8", mappingNote:"编码精确，但 HS8 仍是掘进设备筛查池，不等同于盾构机整机。", countryMappings:[{country:"印度",code:"843031",version:"India HS 2022",reliability:"中"}], controlCategory:"工程设备", controlStatus:"需结合技术参数", controlParameters:"设备型号、掘进方式、最终用途与最终用户", controlEffective:"按现行两用物项规则核验" },
-  tunnel_843039: { codes:["84303900"], scope:"精确 HS8", mappingNote:"编码精确，但 HS8 仍是其他掘进设备筛查池。", countryMappings:[{country:"印度",code:"843039",version:"India HS 2022",reliability:"中"}], controlCategory:"工程设备", controlStatus:"需结合技术参数", controlParameters:"设备型号、掘进方式、最终用途与最终用户", controlEffective:"按现行两用物项规则核验" },
-  earthmoving_dumptruck: { codes:["87041000"], scope:"精确 HS8", mappingNote:"中国 HS2022 与印度 HS6 可直接对照；车辆型号和用途仍需业务单证核验。", countryMappings:[{country:"印度",code:"870410",version:"India HS 2022",reliability:"高"}], controlCategory:"工程车辆", controlStatus:"未列为重点管制筛查", controlParameters:"车辆型号、用途与最终用户", controlEffective:"现行目录" },
-  earthmoving_crane: { codes:["87051000"], scope:"精确 HS8", mappingNote:"中国 HS2022 与印度 HS6 可直接对照；金额不代表车辆台数。", countryMappings:[{country:"印度",code:"870510",version:"India HS 2022",reliability:"高"}], controlCategory:"工程车辆", controlStatus:"未列为重点管制筛查", controlParameters:"车辆型号、用途与最终用户", controlEffective:"现行目录" },
-  earthmoving_mixer: { codes:["87054000"], scope:"精确 HS8", mappingNote:"中国 HS2022 与印度 HS6 可直接对照；订单稀疏时需结合数量。", countryMappings:[{country:"印度",code:"870540",version:"India HS 2022",reliability:"高"}], controlCategory:"工程车辆", controlStatus:"未列为重点管制筛查", controlParameters:"车辆型号、用途与最终用户", controlEffective:"现行目录" },
-  graphite: { codes:["25041000","25049000"], scope:"HS8 子项集合", mappingNote:"天然石墨需按粉末/片状等中国 HS8 子目拆分；当前金额仍为 HS4 筛查池。", countryMappings:[{country:"印度",code:"2504",version:"India HS 2022",reliability:"低"}], controlCategory:"石墨材料", controlStatus:"重点核验", controlParameters:"纯度、粒径、形态、密度及用途", controlEffective:"按现行出口管制目录核验" },
-  rareearth: { codes:["28461000","28469000"], scope:"HS8 子项集合", mappingNote:"稀土化合物需按元素和化合物形态拆分；当前金额仍为 HS4 筛查池。", countryMappings:[{country:"印度",code:"2846",version:"India HS 2022",reliability:"低"}], controlCategory:"稀土材料", controlStatus:"重点核验", controlParameters:"元素、化合物形态、含量和最终用途", controlEffective:"按现行出口管制目录核验" },
+const chinaHs8Profile: Record<string, ChinaControlMeta> = {
+  fertilizer_urea: { controlCategory:"化肥/农资", controlStatus:"未列为重点管制筛查", controlParameters:"产品成分、用途与许可证政策", controlEffective:"现行目录" },
+  fertilizer_dap: { controlCategory:"化肥/农资", controlStatus:"未列为重点管制筛查", controlParameters:"产品成分、用途与许可证政策", controlEffective:"现行目录" },
+  fertilizer_mop: { controlCategory:"化肥/农资", controlStatus:"未列为重点管制筛查", controlParameters:"产品成分、用途与许可证政策", controlEffective:"现行目录" },
+  fertilizer_npk: { controlCategory:"化肥/农资", controlStatus:"未列为重点管制筛查", controlParameters:"产品成分、用途与许可证政策", controlEffective:"现行目录" },
+  tunnel_843031: { controlCategory:"工程设备", controlStatus:"需结合技术参数", controlParameters:"设备型号、掘进方式、最终用途与最终用户", controlEffective:"按现行两用物项规则核验" },
+  tunnel_843039: { controlCategory:"工程设备", controlStatus:"需结合技术参数", controlParameters:"设备型号、掘进方式、最终用途与最终用户", controlEffective:"按现行两用物项规则核验" },
+  earthmoving_dumptruck: { controlCategory:"工程车辆", controlStatus:"未列为重点管制筛查", controlParameters:"车辆型号、用途与最终用户", controlEffective:"现行目录" },
+  earthmoving_crane: { controlCategory:"工程车辆", controlStatus:"未列为重点管制筛查", controlParameters:"车辆型号、用途与最终用户", controlEffective:"现行目录" },
+  earthmoving_mixer: { controlCategory:"工程车辆", controlStatus:"未列为重点管制筛查", controlParameters:"车辆型号、用途与最终用户", controlEffective:"现行目录" },
+  graphite: { controlCategory:"石墨材料", controlStatus:"重点核验", controlParameters:"纯度、粒径、形态、密度及用途", controlEffective:"按现行出口管制目录核验" },
+  rareearth: { controlCategory:"稀土材料", controlStatus:"重点核验", controlParameters:"元素、化合物形态、含量和最终用途", controlEffective:"按现行出口管制目录核验" },
 };
 const hs8ProfileOf = (item: CommodityRecord): ChinaHs8Profile => {
   const controlMeta = chinaHs8Profile[item.id];
@@ -143,39 +152,39 @@ const statLevelOf = (item: CommodityRecord) => item.hs.length === 8 ? "中国 HS
 const reportHref = (id: string) => `${import.meta.env.BASE_URL}reports/${id}.docx`;
 
 const commodities: CommodityRecord[] = [
-  { id: "ic", hs: "854231", name: "处理器及控制器集成电路", english: "Processors and controllers", category: "电子与电力", completeYear: annual(5.059862022, 16.575852287), latestPulse: pulse, alternatives: ["中国台湾", "韩国", "日本", "马来西亚"], definition: "HS 854231：作为处理器及控制器的电子集成电路，不再与存储器、放大器等其他集成电路合并。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
-  { id: "battery", hs: "850760", name: "锂离子蓄电池", english: "Lithium-ion accumulators", category: "电子与电力", completeYear: annual(3.807624325, 4.083603910), latestPulse: pulse, alternatives: ["越南", "日本", "韩国", "马来西亚"], definition: "HS 850760：锂离子蓄电池，不包含铅酸蓄电池及其他化学体系。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
-  { id: "transformers", hs: "850440", name: "静止式变流器", english: "Static converters", category: "电子与电力", completeYear: annual(1.358498017, 2.174534989), latestPulse: pulse, alternatives: ["德国", "日本", "韩国", "美国"], definition: "HS 850440：静止式变流器，不再把变压器、电感器等 HS 8504 其他物项合并计算。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
-  { id: "semiconductor", hs: "854142", name: "未组装光伏电池", english: "Photovoltaic cells not assembled in modules or panels", category: "电子与电力", completeYear: annual(1.989338056, 2.673415238), latestPulse: pulse, alternatives: ["越南", "马来西亚", "日本", "中国台湾"], definition: "HS 854142：未装在组件内或未组装成块的光电池，不与其他二极管、晶体管及光伏组件合并。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
-  { id: "fertilizer", hs: "31", name: "化肥", english: "Fertilizers", category: "医药化工", completeYear: annual(2.160695784, 14.171272537), latestPulse: pulse, alternatives: ["俄罗斯", "沙特阿拉伯", "摩洛哥", "阿曼", "加拿大"], definition: "HS 31 化肥总项；详情下钻至尿素、磷酸二铵（DAP）、氯化钾（MOP）与 NPK 四个 HS6 子项。总项用于观察整体来源暴露，不能替代分品类判断。", sourcePublished: "2026-07", accessedAt: "2026-07-23", searchTerms: "尿素 DAP 磷酸二铵 MOP 氯化钾 NPK 310210 310530 310420 310520", children: ["fertilizer_urea","fertilizer_dap","fertilizer_mop","fertilizer_npk"], trend: [{year:"2021",china:2.6875,world:9.1168,share:29.5},{year:"2022",china:2.3375,world:17.2598,share:13.5},{year:"2023",china:2.6069,world:10.4229,share:25.0},{year:"2024",china:0.8541,world:7.7090,share:11.1},{year:"2025",china:2.1607,world:14.1713,share:15.2}] },
-  { id: "polymer", hs: "390761", name: "高黏度聚对苯二甲酸乙二酯", english: "Polyethylene terephthalate, viscosity ≥ 78 ml/g", category: "医药化工", completeYear: annual(0.161605635, 0.259853632), latestPulse: pulse, alternatives: ["韩国", "新加坡", "泰国", "日本"], definition: "HS 390761：黏度数不低于 78 毫升/克的聚对苯二甲酸乙二酯。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
-  { id: "graphite", hs: "250410", name: "粉末或鳞片状天然石墨", english: "Natural graphite in powder or flakes", category: "原材料", completeYear: annual(0.003700898, 0.039662767), latestPulse: pulse, alternatives: ["马达加斯加", "莫桑比克", "坦桑尼亚", "巴西"], definition: "HS 250410：粉末或鳞片状天然石墨；是否受控仍取决于纯度、粒径、形态、密度和用途。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE, controlled: "部分石墨相关物项受控" },
-  { id: "rareearth", hs: "284690", name: "其他稀土金属化合物", english: "Other compounds of rare-earth metals", category: "原材料", completeYear: annual(0.002689114, 0.006087380), latestPulse: pulse, alternatives: ["日本", "韩国", "俄罗斯", "奥地利", "美国"], definition: "HS 284690：除铈化合物外的其他稀土金属、钇或钪的无机或有机化合物；管制判断仍需下钻元素与技术参数。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE, controlled: "部分中重稀土化合物受控" },
-  { id: "pumps", hs: "841370", name: "其他离心泵", english: "Other centrifugal pumps", category: "工业机械", completeYear: annual(0.077506298, 0.223729790), latestPulse: pulse, alternatives: ["德国", "美国", "日本", "意大利"], definition: "HS 841370：其他离心泵，不包含容积式泵及液体提升机。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
-  { id: "valves", hs: "848180", name: "其他龙头、旋塞及类似装置", english: "Other taps, cocks, valves and similar appliances", category: "工业机械", completeYear: annual(0.335823903, 1.492756437), latestPulse: pulse, alternatives: ["德国", "美国", "意大利", "日本"], definition: "HS 848180：未列入专门子目的其他龙头、旋塞、阀门及类似装置。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
-  { id: "toolparts", hs: "846693", name: "金属加工机床专用零件及附件", english: "Parts for machine-tools of headings 8456–8461", category: "工业机械", completeYear: annual(0.102360587, 0.327527779), latestPulse: pulse, alternatives: ["德国", "日本", "意大利", "中国台湾"], definition: "HS 846693：专用于或主要用于 HS 8456—8461 所列机床的零件及附件。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
-  { id: "machineparts", hs: "843143", name: "钻探或凿井机械零件", english: "Parts for boring or sinking machinery", category: "工程设备", completeYear: annual(0.125859977, 0.296263156), latestPulse: pulse, alternatives: ["德国", "日本", "美国", "韩国"], definition: "HS 843143：专用于或主要用于钻探或凿井机械的零件，不再与全部工程机械零件合并。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
-  { id: "tunnel", hs: "843031/843039", name: "盾构机", english: "Tunnel boring machines", category: "工程设备", completeYear: annual(0.042488353, 0.108409376), latestPulse: pulse, alternatives: ["欧盟", "芬兰", "美国", "新加坡", "南非"], definition: "土压平衡盾构机、泥水平衡盾构机与硬岩 TBM 的项目级观察项。HS 843031 与 843039 同时混入采煤机、截岩机和其他掘进设备，只能作为整机贸易筛查池，不能把合计金额等同于盾构机成交额或台数。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE, proxy: true, searchTerms: "盾构 TBM 隧道掘进机 土压平衡 泥水平衡 硬岩 843031 843039", children: ["tunnel_843031","tunnel_843039"] },
-  { id: "earthmoving", hs: "870410/870510/870540", name: "工程车", english: "Special-purpose construction vehicles", category: "工程设备", completeYear: annual(0.022815544, 0.059909220), latestPulse: pulse, alternatives: ["德国", "日本", "美国", "芬兰", "印度尼西亚"], definition: "工程车整车筛查项，合并非公路用自卸车、汽车起重机和混凝土搅拌车三个 HS6 子项。未纳入混合消防、医疗等多类专用车辆的 HS 870590，也不包含一般挖掘机、装载机或零部件。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE, searchTerms: "工程车 矿用自卸车 汽车起重机 混凝土搅拌车 870410 870510 870540", children: ["earthmoving_dumptruck","earthmoving_crane","earthmoving_mixer"] },
-  { id: "autoparts", hs: "870840", name: "机动车变速箱及其零件", english: "Gear boxes and parts thereof", category: "车辆零部件", completeYear: annual(0.188034408, 1.744014444), latestPulse: pulse, alternatives: ["德国", "日本", "韩国", "美国"], definition: "HS 870840：机动车辆用变速箱及其零件，不再与其他机动车零部件合并。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
+  { id: "ic", hs: "854231", name: "处理器及控制器集成电路", english: "Processors and controllers", category: "电子与电力", completeYear: annual(5.059862022, 16.575852287), latestPulse: pulse, alternatives: ["中国台湾", "韩国", "日本", "墨西哥", "马来西亚"], definition: "HS 854231：作为处理器及控制器的电子集成电路，不再与存储器、放大器等其他集成电路合并。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
+  { id: "battery", hs: "850760", name: "锂离子蓄电池", english: "Lithium-ion accumulators", category: "电子与电力", completeYear: annual(3.807624325, 4.083603910), latestPulse: pulse, alternatives: ["日本", "印度尼西亚", "韩国", "越南", "德国"], definition: "HS 850760：锂离子蓄电池，不包含铅酸蓄电池及其他化学体系。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
+  { id: "transformers", hs: "850440", name: "静止式变流器", english: "Static converters", category: "电子与电力", completeYear: annual(1.358498017, 2.174534989), latestPulse: pulse, alternatives: ["日本", "德国", "越南", "美国", "韩国"], definition: "HS 850440：静止式变流器，不再把变压器、电感器等 HS 8504 其他物项合并计算。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
+  { id: "semiconductor", hs: "854142", name: "未组装光伏电池", english: "Photovoltaic cells not assembled in modules or panels", category: "电子与电力", completeYear: annual(1.989338056, 2.673415238), latestPulse: pulse, alternatives: ["印度尼西亚", "埃塞俄比亚", "老挝", "越南", "泰国"], definition: "HS 854142：未装在组件内或未组装成块的光电池，不与其他二极管、晶体管及光伏组件合并。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
+  { id: "fertilizer", hs: "31", name: "化肥", english: "Fertilizers", category: "医药化工", completeYear: annual(2.160695784, 14.171272537), latestPulse: pulse, alternatives: ["俄罗斯", "沙特阿拉伯", "摩洛哥", "阿曼", "卡塔尔"], definition: "HS 31 化肥总项；详情下钻至尿素、磷酸二铵（DAP）、氯化钾（MOP）与 NPK 四个 HS6 子项。总项用于观察整体来源暴露，不能替代分品类判断。", sourcePublished: "2026-07", accessedAt: "2026-07-23", searchTerms: "尿素 DAP 磷酸二铵 MOP 氯化钾 NPK 310210 310530 310420 310520", children: ["fertilizer_urea","fertilizer_dap","fertilizer_mop","fertilizer_npk"], trend: [{year:"2021",china:2.6875,world:9.1168,share:29.5},{year:"2022",china:2.3375,world:17.2598,share:13.5},{year:"2023",china:2.6069,world:10.4229,share:25.0},{year:"2024",china:0.8541,world:7.7090,share:11.1},{year:"2025",china:2.1607,world:14.1713,share:15.2}] },
+  { id: "polymer", hs: "390761", name: "高黏度聚对苯二甲酸乙二酯", english: "Polyethylene terephthalate, viscosity ≥ 78 ml/g", category: "医药化工", completeYear: annual(0.161605635, 0.259853632), latestPulse: pulse, alternatives: ["越南", "孟加拉国", "泰国", "阿曼", "美国"], definition: "HS 390761：黏度数不低于 78 毫升/克的聚对苯二甲酸乙二酯。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
+  { id: "graphite", hs: "250410", name: "粉末或鳞片状天然石墨", english: "Natural graphite in powder or flakes", category: "原材料", completeYear: annual(0.003700898, 0.039662767), latestPulse: pulse, alternatives: ["马达加斯加", "坦桑尼亚", "莫桑比克", "德国", "美国"], definition: "HS 250410：粉末或鳞片状天然石墨；是否受控仍取决于纯度、粒径、形态、密度和用途。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE, controlled: "部分石墨相关物项受控" },
+  { id: "rareearth", hs: "284690", name: "其他稀土金属化合物", english: "Other compounds of rare-earth metals", category: "原材料", completeYear: annual(0.002689114, 0.006087380), latestPulse: pulse, alternatives: ["奥地利", "日本", "德国", "美国", "法国"], definition: "HS 284690：除铈化合物外的其他稀土金属、钇或钪的无机或有机化合物；管制判断仍需下钻元素与技术参数。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE, controlled: "部分中重稀土化合物受控" },
+  { id: "pumps", hs: "841370", name: "其他离心泵", english: "Other centrifugal pumps", category: "工业机械", completeYear: annual(0.077506298, 0.223729790), latestPulse: pulse, alternatives: ["日本", "德国", "美国", "意大利", "墨西哥"], definition: "HS 841370：其他离心泵，不包含容积式泵及液体提升机。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
+  { id: "valves", hs: "848180", name: "其他龙头、旋塞及类似装置", english: "Other taps, cocks, valves and similar appliances", category: "工业机械", completeYear: annual(0.335823903, 1.492756437), latestPulse: pulse, alternatives: ["美国", "德国", "意大利", "法国", "日本"], definition: "HS 848180：未列入专门子目的其他龙头、旋塞、阀门及类似装置。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
+  { id: "toolparts", hs: "846693", name: "金属加工机床专用零件及附件", english: "Parts for machine-tools of headings 8456–8461", category: "工业机械", completeYear: annual(0.102360587, 0.327527779), latestPulse: pulse, alternatives: ["中国台湾", "日本", "德国", "美国", "意大利"], definition: "HS 846693：专用于或主要用于 HS 8456—8461 所列机床的零件及附件。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
+  { id: "machineparts", hs: "843143", name: "钻探或凿井机械零件", english: "Parts for boring or sinking machinery", category: "工程设备", completeYear: annual(0.125859977, 0.296263156), latestPulse: pulse, alternatives: ["美国", "意大利", "加拿大", "芬兰", "阿联酋"], definition: "HS 843143：专用于或主要用于钻探或凿井机械的零件，不再与全部工程机械零件合并。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
+  { id: "tunnel", hs: "843031/843039", name: "盾构机", english: "Tunnel boring machines", category: "工程设备", completeYear: annual(0.042488353, 0.108409376), latestPulse: pulse, alternatives: ["美国", "新加坡", "芬兰", "奥地利", "南非"], definition: "土压平衡盾构机、泥水平衡盾构机与硬岩 TBM 的项目级观察项。HS 843031 与 843039 同时混入采煤机、截岩机和其他掘进设备，只能作为整机贸易筛查池，不能把合计金额等同于盾构机成交额或台数。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE, proxy: true, searchTerms: "盾构 TBM 隧道掘进机 土压平衡 泥水平衡 硬岩 843031 843039", children: ["tunnel_843031","tunnel_843039"] },
+  { id: "earthmoving", hs: "870410/870510/870540", name: "工程车", english: "Special-purpose construction vehicles", category: "工程设备", completeYear: annual(0.022815544, 0.059909220), latestPulse: pulse, alternatives: ["瑞典", "加拿大", "泰国", "芬兰", "荷兰"], definition: "工程车整车筛查项，合并非公路用自卸车、汽车起重机和混凝土搅拌车三个 HS6 子项。未纳入混合消防、医疗等多类专用车辆的 HS 870590，也不包含一般挖掘机、装载机或零部件。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE, searchTerms: "工程车 矿用自卸车 汽车起重机 混凝土搅拌车 870410 870510 870540", children: ["earthmoving_dumptruck","earthmoving_crane","earthmoving_mixer"] },
+  { id: "autoparts", hs: "870840", name: "机动车变速箱及其零件", english: "Gear boxes and parts thereof", category: "车辆零部件", completeYear: annual(0.188034408, 1.744014444), latestPulse: pulse, alternatives: ["日本", "韩国", "德国", "美国", "泰国"], definition: "HS 870840：机动车辆用变速箱及其零件，不再与其他机动车零部件合并。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
 ];
 
 const fertilizerSubitems: CommodityRecord[] = [
-  { id: "fertilizer_urea", hs: "310210", name: "尿素", english: "Urea", category: "医药化工", completeYear: annual(0.878822312, 4.694018868), latestPulse: pulse, alternatives: ["阿曼", "俄罗斯", "卡塔尔", "沙特阿拉伯", "阿联酋"], definition: "HS 310210 尿素。贸易价值使用自然年，印度化肥部国别数量使用财政年度；两个时间窗口必须分开阅读。", sourcePublished: "2026-07", accessedAt: "2026-07-23" },
-  { id: "fertilizer_dap", hs: "310530", name: "磷酸二铵（DAP）", english: "Diammonium phosphate", category: "医药化工", completeYear: annual(0.450036058, 4.909200456), latestPulse: pulse, alternatives: ["沙特阿拉伯", "摩洛哥", "俄罗斯", "约旦"], definition: "HS 310530 磷酸氢二铵（DAP）。该品类对中国出口政策和印度采购节奏敏感，年度份额波动较大。", sourcePublished: "2026-07", accessedAt: "2026-07-23" },
-  { id: "fertilizer_mop", hs: "310420", name: "氯化钾（MOP）", english: "Potassium chloride", category: "医药化工", completeYear: annual(0.000025641, 1.251671655), latestPulse: pulse, alternatives: ["俄罗斯", "加拿大", "约旦", "白俄罗斯"], definition: "HS 310420 氯化钾（MOP）。印度几乎完全依赖进口，但中国在该品类中不是关键直接来源。", sourcePublished: "2026-07", accessedAt: "2026-07-23" },
-  { id: "fertilizer_npk", hs: "310520", name: "含氮磷钾三种肥效元素的肥料", english: "Mineral or chemical fertilizers containing N, P and K", category: "医药化工", completeYear: annual(0.009068417, 1.209994350), latestPulse: pulse, alternatives: ["沙特阿拉伯", "俄罗斯", "摩洛哥", "约旦"], definition: "HS 310520：含氮、磷、钾三种肥效元素的矿物肥料或化学肥料；不与印度更宽的 NPK/NPKS 财年统计混算。", sourcePublished: "2026-07", accessedAt: "2026-07-23" },
+  { id: "fertilizer_urea", hs: "310210", name: "尿素", english: "Urea", category: "医药化工", completeYear: annual(0.878822312, 4.694018868), latestPulse: pulse, alternatives: ["阿曼", "俄罗斯", "卡塔尔", "印度尼西亚", "沙特阿拉伯"], definition: "HS 310210 尿素。贸易价值使用自然年，印度化肥部国别数量使用财政年度；两个时间窗口必须分开阅读。", sourcePublished: "2026-07", accessedAt: "2026-07-23" },
+  { id: "fertilizer_dap", hs: "310530", name: "磷酸二铵（DAP）", english: "Diammonium phosphate", category: "医药化工", completeYear: annual(0.450036058, 4.909200456), latestPulse: pulse, alternatives: ["沙特阿拉伯", "摩洛哥", "俄罗斯", "澳大利亚", "约旦"], definition: "HS 310530 磷酸氢二铵（DAP）。该品类对中国出口政策和印度采购节奏敏感，年度份额波动较大。", sourcePublished: "2026-07", accessedAt: "2026-07-23" },
+  { id: "fertilizer_mop", hs: "310420", name: "氯化钾（MOP）", english: "Potassium chloride", category: "医药化工", completeYear: annual(0.000025641, 1.251671655), latestPulse: pulse, alternatives: ["俄罗斯", "土库曼斯坦", "加拿大", "约旦", "以色列"], definition: "HS 310420 氯化钾（MOP）。印度几乎完全依赖进口，但中国在该品类中不是关键直接来源。", sourcePublished: "2026-07", accessedAt: "2026-07-23" },
+  { id: "fertilizer_npk", hs: "310520", name: "含氮磷钾三种肥效元素的肥料", english: "Mineral or chemical fertilizers containing N, P and K", category: "医药化工", completeYear: annual(0.009068417, 1.209994350), latestPulse: pulse, alternatives: ["俄罗斯", "沙特阿拉伯", "挪威", "以色列", "阿联酋"], definition: "HS 310520：含氮、磷、钾三种肥效元素的矿物肥料或化学肥料；不与印度更宽的 NPK/NPKS 财年统计混算。", sourcePublished: "2026-07", accessedAt: "2026-07-23" },
 ];
 
 const tunnelSubitems: CommodityRecord[] = [
-  { id: "tunnel_843031", hs: "843031", name: "自推进采煤机、截岩机及隧道掘进机械", english: "Self-propelled coal or rock cutters and tunnelling machinery", category: "工程设备", completeYear: annual(0.040596479, 0.102945050), latestPulse: pulse, alternatives: ["欧盟", "芬兰", "美国", "新加坡", "南非"], definition: "HS 843031：自推进的采煤机、截岩机及隧道掘进机械。金额仅对应这一法定商品物项，不再称作盾构机金额；识别盾构机仍需型号和项目资料。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
-  { id: "tunnel_843039", hs: "843039", name: "其他采煤机、截岩机及隧道掘进机械", english: "Other coal or rock cutters and tunnelling machinery", category: "工程设备", completeYear: annual(0.001891874, 0.005464327), latestPulse: pulse, alternatives: ["新加坡", "德国", "美国", "芬兰"], definition: "HS 843039：其他非自推进采煤机、截岩机及隧道掘进机械。金额只对应法定税目，不推算盾构机台数。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
+  { id: "tunnel_843031", hs: "843031", name: "自推进采煤机、截岩机及隧道掘进机械", english: "Self-propelled coal or rock cutters and tunnelling machinery", category: "工程设备", completeYear: annual(0.040596479, 0.102945050), latestPulse: pulse, alternatives: ["美国", "新加坡", "芬兰", "奥地利", "南非"], definition: "HS 843031：自推进的采煤机、截岩机及隧道掘进机械。金额仅对应这一法定商品物项，不再称作盾构机金额；识别盾构机仍需型号和项目资料。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
+  { id: "tunnel_843039", hs: "843039", name: "其他采煤机、截岩机及隧道掘进机械", english: "Other coal or rock cutters and tunnelling machinery", category: "工程设备", completeYear: annual(0.001891874, 0.005464327), latestPulse: pulse, alternatives: ["韩国", "芬兰", "荷兰", "意大利", "俄罗斯"], definition: "HS 843039：其他非自推进采煤机、截岩机及隧道掘进机械。金额只对应法定税目，不推算盾构机台数。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
 ];
 
 const earthmovingSubitems: CommodityRecord[] = [
-  { id: "earthmoving_dumptruck", hs: "870410", name: "非公路用自卸车", english: "Off-highway dump trucks", category: "工程设备", completeYear: annual(0.022185146, 0.057239066), latestPulse: pulse, alternatives: ["印度尼西亚", "德国", "日本", "美国"], definition: "HS 870410 为非公路用自卸车，主要包括矿山、采石场等封闭场景使用的整车；不包含一般道路货车和零部件。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
-  { id: "earthmoving_crane", hs: "870510", name: "汽车起重机", english: "Mobile cranes", category: "工程设备", completeYear: annual(0.000400126, 0.000606105), latestPulse: pulse, alternatives: ["德国", "日本", "美国", "芬兰"], definition: "HS 870510 为装在汽车底盘上的起重机整车。印度进口申报与中国出口镜像金额存在巨大差异，必须分开列示，不能互相替代。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
-  { id: "earthmoving_mixer", hs: "870540", name: "混凝土搅拌车", english: "Concrete mixer trucks", category: "工程设备", completeYear: annual(0.000230272, 0.002064049), latestPulse: pulse, alternatives: ["德国", "日本", "韩国", "意大利"], definition: "HS 870540 为混凝土搅拌运输车整车。公开贸易规模小、订单稀疏，单月或单年波动可能主要由少数车辆交付造成。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
+  { id: "earthmoving_dumptruck", hs: "870410", name: "非公路用自卸车", english: "Off-highway dump trucks", category: "工程设备", completeYear: annual(0.022185146, 0.057239066), latestPulse: pulse, alternatives: ["瑞典", "加拿大", "泰国", "芬兰", "荷兰"], definition: "HS 870410 为非公路用自卸车，主要包括矿山、采石场等封闭场景使用的整车；不包含一般道路货车和零部件。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
+  { id: "earthmoving_crane", hs: "870510", name: "汽车起重机", english: "Mobile cranes", category: "工程设备", completeYear: annual(0.000400126, 0.000606105), latestPulse: pulse, alternatives: [], definition: "HS 870510 为装在汽车底盘上的起重机整车。2025 年除中国外未报告其他境外来源；印度进口申报与中国出口镜像金额仍须分开列示，不能互相替代。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
+  { id: "earthmoving_mixer", hs: "870540", name: "混凝土搅拌车", english: "Concrete mixer trucks", category: "工程设备", completeYear: annual(0.000230272, 0.002064049), latestPulse: pulse, alternatives: ["芬兰", "尼泊尔", "墨西哥"], definition: "HS 870540 为混凝土搅拌运输车整车。公开贸易规模小、订单稀疏，单月或单年波动可能主要由少数车辆交付造成。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
 ];
 
 const commoditySubitemsByParent: Record<string,CommodityRecord[]> = {
@@ -529,138 +538,132 @@ const controls: ControlRecord[] = [
 
 const routes: RouteSignal[] = [
   {
-    id:"my-graphite",
-    product:"天然石墨",
-    hs:"2504",
-    hub:"马来西亚",
-    nodes:["中国","马来西亚","印度"],
-    coverage:"2023→2024",
-    cnToHub:[0.402,0.622],
-    hubToIndia:[0.0146,0.647],
-    directToIndia:[15.18,4.48],
-    reliability:"中",
-    evidence:"UN Comtrade 镜像统计显示，中国→马来西亚与马来西亚→印度在同一 HS4、同一年度窗口内同步上升，同时中国→印度直接流明显下降。",
-    inference:"可作为马来西亚节点的优先核验信号，重点查原产地证书、装运港、加工记录和印度进口商对应关系。",
-    caveat:"HS 2504 不能识别纯度、粒径、球形化等受控参数；同步增长也可能来自马来西亚本地需求、库存或不同货物。",
-    source:COMTRADE
+    id:"id-pvcell", product:"未组装光伏电池", hs:"854142", hub:"印度尼西亚", nodes:["中国","印度尼西亚","印度"], coverage:"2023→2024",
+    cnToHub:[19.656345,175.519286], hubToIndia:[1.354986,21.707434], directToIndia:[980.804246,1228.039774], reliability:"中",
+    evidence:"同一 HS2022 六位物项下，中国申报出口至印尼由 1,965.6 万美元增至 1.755 亿美元；印尼申报出口至印度由 135.5 万美元增至 2,170.7 万美元。",
+    methodSteps:["锁定真实 HS6 854142，不与光伏组件或其他半导体合并。","分别读取中国出口—印尼、印尼出口—印度两段报告国数据。","两段分别增长 793% 和 1,502%，再以印度自中国进口增长 25% 作为对照。"],
+    inference:"两段规模与增幅均较显著，印尼应列为光伏电池原产地、加工工序和提单穿透的优先核验国；这仍是统计筛查，不是同批货物证明。",
+    caveat:"印尼具有本地光伏制造与贸易活动；两段增长可能对应不同企业、不同电池规格或真实加工。",
+    sourceDetail:"UN Comtrade 公共 API；中国报告出口、印尼报告出口、印度报告进口；HS2022 H6 854142；年度 2023、2024；访问 2026-07-23。", source:COMTRADE
   },
   {
-    id:"vn-artificial",
-    product:"人造石墨",
-    hs:"3801",
-    hub:"越南",
-    nodes:["中国","越南","印度"],
-    coverage:"2023→2024",
-    cnToHub:[12.87,24.08],
-    hubToIndia:[0,0.213],
-    directToIndia:[79.59,60.84],
-    reliability:"中",
-    evidence:"UN Comtrade 显示中国→越南增至 2,408 万美元，越南→印度由零增至 21.3 万美元，中国→印度直接流同期下降。",
-    inference:"越南可列为弱到中等优先级的加工贸易或再出口核验节点，适合用企业提单和印度买方数据做穿透。",
-    caveat:"越南→印度金额基数很小，不能据此估算转口规模；HS 3801 也覆盖多类人造石墨及碳素制品。",
-    source:COMTRADE
+    id:"my-processor", product:"处理器及控制器集成电路", hs:"854231", hub:"马来西亚", nodes:["中国","马来西亚","印度"], coverage:"2023→2024",
+    cnToHub:[3336.418901,4393.731309], hubToIndia:[366.053511,459.852821], directToIndia:[5389.251948,5325.437801], reliability:"中",
+    evidence:"中国→马来西亚由 33.364 亿美元增至 43.937 亿美元；马来西亚→印度由 3.661 亿美元增至 4.599 亿美元；印度自中国直接进口同期下降 1.2%。",
+    methodSteps:["使用 HS6 854231，排除存储器、放大器和其他集成电路。","核对两段报告国出口金额及同一年度变化。","观察到两段分别增长 31.7% 和 25.6%，同时直接流略降，因此进入优先核验池。"],
+    inference:"马来西亚是成熟半导体制造、封测与分拨节点；应穿透晶圆来源、封装测试工序和原产地规则，不能把区域分工直接称为转口。",
+    caveat:"集成电路在马来西亚可能发生足以改变原产地判断的实质加工；聚合金额无法追踪同一芯片。",
+    sourceDetail:"UN Comtrade 公共 API；中国报告出口、马来西亚报告出口、印度报告进口；HS2022 H6 854231；年度 2023、2024；访问 2026-07-23。", source:COMTRADE
   },
   {
-    id:"sg-rareearth",
-    product:"稀土化合物",
-    hs:"2846",
-    hub:"新加坡",
-    nodes:["中国","新加坡","印度"],
-    coverage:"2023→2024",
-    cnToHub:[0.057,2.134],
-    hubToIndia:[0.0107,0.0102],
-    directToIndia:[5.20,4.32],
-    reliability:"低",
-    evidence:"UN Comtrade 显示中国→新加坡大幅增加，但新加坡→印度未同步增加，且金额仅约 1 万美元量级。",
-    inference:"目前更像上游异常流向或区域库存信号，不足以构成中国→新加坡→印度路径判断。",
-    caveat:"稀土化合物必须下钻到元素、化合物形态、含量和最终用途；HS4 只能做预警池。",
-    source:COMTRADE
+    id:"sg-selfpropelled", product:"自推进采煤机、截岩机及隧道掘进机械", hs:"843031", hub:"新加坡", nodes:["中国","新加坡","印度"], coverage:"2023→2024",
+    cnToHub:[18.994804,127.502664], hubToIndia:[0,8.279193], directToIndia:[36.043547,10.303739], reliability:"中",
+    evidence:"中国→新加坡由 1,899.5 万美元增至 1.275 亿美元；新加坡→印度由零增至 827.9 万美元；印度自中国直接进口下降 71.4%。",
+    methodSteps:["按法定 HS6 843031 统计，不把金额直接命名为盾构机成交额。","逐段比较中国报告出口与新加坡报告出口。","第二段为新增且直接流下降，故列入核验；再用型号、序列号和项目交付信息区分盾构机与其他设备。"],
+    inference:"新加坡是该掘进机械税号下值得核验的贸易节点，尤其需要核查设备序列号、装运港、工法与是否发生翻新或实质加工。",
+    caveat:"HS 843031 同时包含采煤机、截岩机和隧道掘进机械，无法单凭贸易额识别盾构机或确认同一设备。",
+    sourceDetail:"UN Comtrade 公共 API；中国报告出口、新加坡报告出口、印度报告进口；HS2022 H6 843031；年度 2023、2024；访问 2026-07-23。", source:COMTRADE
   },
   {
-    id:"ae-tungsten",
-    product:"钨及其制品",
-    hs:"8101",
-    hub:"阿联酋",
-    nodes:["中国","阿联酋","印度"],
-    coverage:"2023→2024",
-    cnToHub:[1.232,0.628],
-    hubToIndia:[0.00073,0.00001],
-    directToIndia:[17.96,18.69],
-    reliability:"低",
-    evidence:"UN Comtrade 显示两段贸易没有同步上升，中国→印度直接流反而小幅增加。",
-    inference:"该节点更适合作为排除项或低优先级监测对象，不宜列为转口路径证据。",
-    caveat:"钨产品受形态、纯度和用途影响很大；公开 HS4 数据不足以识别受控物项。",
-    source:COMTRADE
+    id:"id-battery", product:"锂离子蓄电池", hs:"850760", hub:"印度尼西亚", nodes:["中国","印度尼西亚","印度"], coverage:"2023→2024",
+    cnToHub:[364.826222,439.934833], hubToIndia:[0.250891,19.510546], directToIndia:[2790.259919,2553.179921], reliability:"中",
+    evidence:"中国→印尼由 3.648 亿美元增至 4.399 亿美元；印尼→印度由 25.1 万美元增至 1,951.1 万美元；印度自中国直接进口下降 8.5%。",
+    methodSteps:["锁定锂离子蓄电池 HS6 850760。","以中国、印尼各自报告的出口统计构造两段，不使用印度尼西亚全球贸易总额替代。","第一段增长 20.6%、第二段增长 7,676%，并与直接流下降对照，形成中等可靠筛查信号。"],
+    inference:"印尼节点值得核查电芯、模组与 PACK 的生产工序、BOM 和原产地转换；第二段增长很快，但不能视为中国货物等额转运。",
+    caveat:"印尼正在扩展本地电池产业，且电池可能发生实质加工；低基数会放大第二段增幅。",
+    sourceDetail:"UN Comtrade 公共 API；中国报告出口、印尼报告出口、印度报告进口；HS2022 H6 850760；年度 2023、2024；访问 2026-07-23。", source:COMTRADE
   },
   {
-    id:"id-dumptruck",
-    product:"非公路用自卸车",
-    hs:"870410",
-    hub:"印度尼西亚",
-    nodes:["中国","印度尼西亚","印度"],
-    coverage:"2023→2024",
-    cnToHub:[198.0,268.47],
-    hubToIndia:[1.2,8.488],
-    directToIndia:[12.98,18.07],
-    reliability:"中",
-    evidence:"公开镜像贸易与专题报告显示，2024 年中国→印度尼西亚达到 2.6847 亿美元，印度自印尼进口 848.8 万美元，印度自中国进口也同步上升。",
-    inference:"印尼是工程车项下最值得优先核验的第三国节点，应查车架号、制造厂、原产地证书和是否发生实质加工。",
-    caveat:"印尼本身也是矿业车辆终端市场；中国→印尼与印尼→印度可能不是同一车辆或同一批订单。",
-    source:COMTRADE
+    id:"ph-converter", product:"静止式变流器", hs:"850440", hub:"菲律宾", nodes:["中国","菲律宾","印度"], coverage:"2023→2024",
+    cnToHub:[252.375542,335.053506], hubToIndia:[8.437208,10.172091], directToIndia:[1012.127009,1201.237512], reliability:"低",
+    evidence:"中国→菲律宾由 2.524 亿美元增至 3.351 亿美元；菲律宾→印度由 843.7 万美元增至 1,017.2 万美元；印度自中国直接进口也增长 18.7%。",
+    methodSteps:["锁定静止式变流器 HS6 850440。","分别采用中国与菲律宾报告的双边出口数据，不用全球出口额替代第二段。","两段分别增长 32.8% 和 20.6%；因直接流同步增长，保留为低可靠核验信号。"],
+    inference:"菲律宾可作为电源电子制造、组装与分拨网络的核验节点，应结合产品型号、制造工序、BOM 和原产地规则判断。",
+    caveat:"菲律宾具有真实电子制造能力，两段可能对应不同型号或经过实质加工；同步增长不能估算转运额。",
+    sourceDetail:"UN Comtrade 公共 API；中国报告出口、菲律宾报告出口、印度报告进口；HS2022 H6 850440；年度 2023、2024；访问 2026-07-23。", source:COMTRADE
   },
   {
-    id:"sg-tunnel",
-    product:"盾构机筛查池",
-    hs:"843031/843039",
-    hub:"新加坡",
-    nodes:["中国","新加坡","印度"],
-    coverage:"2023→2024",
-    cnToHub:[0.84,2.36],
-    hubToIndia:[0.18,1.08],
-    directToIndia:[32.9,42.5],
-    reliability:"低",
-    evidence:"UN Comtrade/WITS 宽口径筛查池可见新加坡两端贸易重叠，但制造商公开项目资料同时存在中国直运印度的反证。",
-    inference:"新加坡应被列为单证核验节点，而不是已确认中转国；重点核对设备序列号、刀盘直径、工法和项目业主。",
-    caveat:"HS 843031/843039 混入采煤机、截岩机和其他掘进设备，不能直接等同于盾构机台数或转口金额。",
-    source:COMTRADE
+    id:"th-pet", product:"高黏度聚对苯二甲酸乙二酯", hs:"390761", hub:"泰国", nodes:["中国","泰国","印度"], coverage:"2023→2024",
+    cnToHub:[56.583678,75.022406], hubToIndia:[2.309836,6.166259], directToIndia:[96.917490,145.881270], reliability:"低",
+    evidence:"中国→泰国由 5,658.4 万美元增至 7,502.2 万美元；泰国→印度由 231.0 万美元增至 616.6 万美元；直接流也增长 50.5%。",
+    methodSteps:["限定为 HS6 390761 的高黏度 PET。","两段分别增长 32.6% 和 167%。","由于中国→印度直接流同步大幅增长，无法用替代关系强化判断，故可靠性降为低。"],
+    inference:"泰国可作为产能、贸易商和原产地规则核验节点，但现有数据更可能同时包含产业扩张和需求增长。",
+    caveat:"价格、产能扩张、库存和真实泰国产品均可造成同步上升；不能推算转口比例。",
+    sourceDetail:"UN Comtrade 公共 API；中国报告出口、泰国报告出口、印度报告进口；HS2022 H6 390761；年度 2023、2024；访问 2026-07-23。", source:COMTRADE
+  },
+  {
+    id:"my-graphite", product:"粉末或鳞片状天然石墨", hs:"250410", hub:"马来西亚", nodes:["中国","马来西亚","印度"], coverage:"2023→2024",
+    cnToHub:[0.402332,0.622341], hubToIndia:[0.002681,0.240458], directToIndia:[14.948163,4.408276], reliability:"低",
+    evidence:"中国→马来西亚由 40.2 万美元增至 62.2 万美元；马来西亚→印度由 0.27 万美元增至 24.0 万美元；印度自中国直接进口下降 70.5%。",
+    methodSteps:["使用真实 HS6 250410，不用 HS4 2504 总项。","复核两段年度金额及直接流。","方向吻合但第二段绝对额仅 24 万美元，且技术参数不可见，因此仅列低可靠弱信号。"],
+    inference:"适合优先核对纯度、粒径、球形化、原产地证书和加工记录；不应把 HS6 全部金额视为受控石墨。",
+    caveat:"金额很小且低基数导致增幅失真；HS6 不能识别出口管制技术参数。",
+    sourceDetail:"UN Comtrade 公共 API；中国报告出口、马来西亚报告出口、印度报告进口；HS2022 H6 250410；年度 2023、2024；访问 2026-07-23。", source:COMTRADE
+  },
+  {
+    id:"sg-otherboring", product:"其他采煤机、截岩机及隧道掘进机械", hs:"843039", hub:"新加坡", nodes:["中国","新加坡","印度"], coverage:"2023→2024",
+    cnToHub:[0.306673,1.171843], hubToIndia:[0.162613,0.373971], directToIndia:[0.591917,0.153256], reliability:"低",
+    evidence:"中国→新加坡由 30.7 万美元增至 117.2 万美元；新加坡→印度由 16.3 万美元增至 37.4 万美元；印度自中国直接进口下降 74.1%。",
+    methodSteps:["限定为 HS6 843039。","两段分别增长 282% 和 130%，并与直接流下降对照。","由于金额小且商品构成复杂，保留为低可靠性单证核验线索。"],
+    inference:"新加坡值得在项目交付期核对设备名称、序列号、净重和装运文件，但不足以证明盾构机经新加坡进入印度。",
+    caveat:"税号涵盖多类非自推进掘进设备，低金额、高件数或零配件会造成显著杂质。",
+    sourceDetail:"UN Comtrade 公共 API；中国报告出口、新加坡报告出口、印度报告进口；HS2022 H6 843039；年度 2023、2024；访问 2026-07-23。", source:COMTRADE
   },
 ];
 
 const routeNetworks: RouteNetworkSignal[] = [
   {
-    id:"battery-vn-my",
-    product:"蓄电池",
-    hs:"8507",
-    nodes:["中国","越南","马来西亚","印度"],
-    reliability:"低",
-    evidence:"UN Comtrade/WITS 与行业公开资料只能支持越南、马来西亚均为电池供应链和区域分拨相关节点，尚未形成中国→越南→马来西亚→印度的逐票金额闭环。",
-    inference:"该链条只能作为多节点供应网络核验路径，适合核查电芯、模组、PACK 的生产工序和原产地转换。",
-    caveat:"三段金额并非同一货物闭环，且电池产品可能经历实质加工；不能据此认定中国电池经两国转口印度。",
-    source:COMTRADE
+    id:"ic-hk-my", product:"处理器及控制器集成电路", hs:"854231", nodes:["中国","中国香港","马来西亚","印度"], coverage:"2023→2024",
+    legs:[
+      {label:"中国→中国香港",values:[22806.298472,27807.267401]},
+      {label:"中国香港→马来西亚",values:[558.916064,831.739842]},
+      {label:"马来西亚→印度",values:[366.053511,459.852821]},
+    ], directToIndia:[5389.251948,5325.437801], reliability:"中",
+    evidence:"同一 HS6 下三段分别增长 21.9%、48.8% 和 25.6%，各段 2024 年金额均超过 4.5 亿美元；印度自中国直接进口同期下降 1.2%。",
+    methodSteps:["锁定 HS2022 H6 854231。","分别采用中国、中国香港、马来西亚三个报告方的双边出口统计构造三段。","以印度报告的中国直接进口作对照；三段同步增长且直接流略降，进入中等可靠多节点核验池。"],
+    inference:"该路径反映东亚半导体制造、封测和分拨网络的显著重叠，适合按晶圆来源、封装测试工序、原产地规则和提单做穿透核验。",
+    caveat:"三段聚合金额不是同一芯片闭环；中国香港与马来西亚均可能发生贸易分拨或实质加工，不能据此认定连续转口。",
+    sourceDetail:"UN Comtrade 公共 API；中国、中国香港、马来西亚分别报告各段出口，印度报告直接进口；HS2022 H6 854231；年度 2023、2024；访问 2026-07-23。", source:COMTRADE
   },
   {
-    id:"ic-vn-my-ph",
-    product:"集成电路",
-    hs:"8542",
-    nodes:["中国","越南","马来西亚","菲律宾","印度"],
-    reliability:"低",
-    evidence:"UN Comtrade/WITS 与公开产业分工资料支持东盟封测、组装和分拨网络存在，但无法用公开聚合数据证明同一芯片依次经过越南、马来西亚、菲律宾后进入印度。",
-    inference:"这更适合解释为封测、组装和区域分工网络，应作为供应链暴露核验清单，而非简单转口结论。",
-    caveat:"半导体跨境流转常发生实质性转型，多国路径金额不能相加，也不能证明同一芯片依次经过所有节点。",
-    source:COMTRADE
+    id:"valve-id-th", product:"其他龙头、旋塞及类似装置", hs:"848180", nodes:["中国","印度尼西亚","泰国","印度"], coverage:"2023→2024",
+    legs:[
+      {label:"中国→印度尼西亚",values:[417.280284,505.515308]},
+      {label:"印度尼西亚→泰国",values:[12.948912,34.904755]},
+      {label:"泰国→印度",values:[36.793318,46.500106]},
+    ], directToIndia:[273.684157,294.086949], reliability:"低",
+    evidence:"同一 HS6 三段分别增长 21.1%、169.6% 和 26.4%，其中最小一段 2024 年为 3,490.5 万美元；直接流也增长 7.5%。",
+    methodSteps:["限定为 HS2022 H6 848180。","用中国、印尼、泰国各自报告的双边出口数据构造三段。","三段同步增长，但直接流亦增长且该税号商品构成宽，因此可靠性定为低。"],
+    inference:"可用于筛查区域阀门供应链中的贸易商、生产工序与原产地变化，优先核对制造商、材质、用途和订单对应关系。",
+    caveat:"HS 848180 覆盖多类阀门装置；三段可能来自不同产品、企业或真实区域生产，不能估算连续转运规模。",
+    sourceDetail:"UN Comtrade 公共 API；中国、印度尼西亚、泰国分别报告各段出口，印度报告直接进口；HS2022 H6 848180；年度 2023、2024；访问 2026-07-23。", source:COMTRADE
+  },
+  {
+    id:"pet-id-th", product:"高黏度聚对苯二甲酸乙二酯", hs:"390761", nodes:["中国","印度尼西亚","泰国","印度"], coverage:"2023→2024",
+    legs:[
+      {label:"中国→印度尼西亚",values:[142.545867,239.250456]},
+      {label:"印度尼西亚→泰国",values:[1.135521,4.038136]},
+      {label:"泰国→印度",values:[2.309836,6.166259]},
+    ], directToIndia:[96.917490,145.881270], reliability:"低",
+    evidence:"同一 HS6 三段分别增长 67.8%、255.6% 和 167.0%；最小一段 2024 年约 403.8 万美元，但印度自中国直接进口也增长 50.5%。",
+    methodSteps:["限定为高黏度 PET 的 HS2022 H6 390761。","逐段采用中国、印尼、泰国报告的双边出口统计。","三段同步增长形成候选，但直接流同步大增，无法支持替代关系，故只列低可靠核验网络。"],
+    inference:"该网络更可能同时反映区域产能、贸易和需求扩张；可结合生产商、批次、黏度指标和原产地证书继续核验。",
+    caveat:"价格和产能变化会显著影响金额，聚合数据无法证明同一批树脂连续经过两国。",
+    sourceDetail:"UN Comtrade 公共 API；中国、印度尼西亚、泰国分别报告各段出口，印度报告直接进口；HS2022 H6 390761；年度 2023、2024；访问 2026-07-23。", source:COMTRADE
   },
 ];
-const auditedRoutes = routes.filter(route=>route.hs === "870410");
-const auditedRouteNetworks = routeNetworks.filter(()=>false);
+const auditedRoutes = routes;
+const auditedRouteNetworks = routeNetworks;
 
 const sources = [
   { tag:"IN", title:"印度 DGCI&S TradeStat", detail:"月度库已更新至 2026 年 5 月，最后更新 2026-07-15；2026 年 4 月起部分 ITC HS 编码调整。", period:"2018-01—2026-05", url:TRADESTAT },
   { tag:"TIA", title:"印度贸易情报与分析门户", detail:"FY2025–26 对华进口 1,316.3 亿美元、出口 194.7 亿美元；来源为 DGCIS。", period:"FY2025–26", url:TIA },
-  { tag:"UN", title:"UN Comtrade API · HS 2022", detail:"2025 矩阵与 2024-12 后月度记录均核验为 classificationCode H6（HS 2022）；跨期趋势单独标注 HS 2017→2022 对照。", period:"2021—2025 / 月度至 2026-06", url:COMTRADE },
+  { tag:"UN", title:"UN Comtrade API · HS 2022", detail:"2025 矩阵与 2024-12 后月度记录均核验为 classificationCode H6（HS 2022）；月度请求范围至 2026 年 6 月，其中 2026 年 4—6 月尚未发布，页面明确留空。", period:"2021—2025 / 月度请求至 2026-06", url:COMTRADE },
   { tag:"FERT", title:"印度化肥部国别—品类附件", detail:"尿素、DAP、MOP、NPK 的财年进口量、对华份额、库存及长期采购协议；与自然年价值口径分开展示。", period:"FY2020–21—FY2025–26", url:"https://sansad.in/getFile/loksabhaquestions/annex/187/AU5699_atvOoH.pdf?source=pqals" },
   { tag:"ROUTE", title:"DGCI&S 化肥直接/间接装运专题", detail:"官方样本显示中国原产化肥 99.9% 直接自中国装运、0.1% 经其他国家装运。", period:"2021-04—2022-02", url:"https://www.dgciskol.gov.in/writereaddata/Downloads/20220504100946Import_from_China_Apr_Feb_2021_22.pdf" },
   { tag:"TBM", title:"中国铁建重工孟买盾构项目资料", detail:"制造商项目资料记录长沙制造、上海装船并直接发往孟买，并披露此前向班加罗尔交付 4 台泥水平衡盾构机。", period:"2020-03", url:"https://en.sasac.gov.cn/2020/03/25/c_4298.htm" },
   { tag:"VEH", title:"DGCI&S 原产国与装运国专题", detail:"提供运输设备直接装运及经新加坡、香港等地装运的宽口径背景；不能外推为单一车型转口比例。", period:"2021-04—2022-02", url:"https://www.dgciskol.gov.in/writereaddata/Downloads/20220504100946Import_from_China_Apr_Feb_2021_22.pdf" },
+  { tag:"CASE", title:"印度蒙德拉海关第三国路径裁决书", detail:"以发票、原产地证书、进出提单、斯里兰卡海关材料和当事人陈述确认中国制造数字印刷版材经科伦坡换装后进入印度；仅用于校验取证方法，不外推至其他商品。", period:"涉案交易 2019—2022 / 裁决公开文件", url:CUSTOMS_CASE },
   { tag:"GOI", title:"印度议会答复 4023/2025", detail:"说明对华进口以原材料、中间品、资本品、电子零件、机械及零件等为主。", period:"2025-03-25", url:"https://www.commerce.gov.in/wp-content/uploads/2025/03/LS-USQ-No.4023-dated.-25.03.2025.pdf" },
   { tag:"CN", title:"两用物项出口管制条例与 2026 目录", detail:"管制编码和技术参数优先于 HS 参考编码；最终用户与最终用途同样影响判定。", period:"现行", url:CONTROL_CATALOG },
 ];
@@ -684,6 +687,7 @@ const weakestRouteValue = (route:RouteSignal) => Math.min(...routeLegs(route).ma
 const weakestRouteGrowth = (route:RouteSignal) => Math.min(...routeLegs(route).map(leg=>growth(leg.values[1],leg.values[0])));
 const exactCommodityReport = (item:CommodityRecord, base:CommodityReport):CommodityReport => ({
   ...base,
+  evidence:"已复核",
   title:`${item.name}对华进口依赖与供应风险分析`,
   status:`${codeLevelOf(item)} ${item.hs} · 具体商品物项`,
   executive:`本报告只分析 ${codeLevelOf(item)} ${item.hs}“${item.name}”。2025 年印度从中国进口 ${formatB(item.completeYear.china)}，该商品进口总额为 ${formatB(item.completeYear.world)}，从中国进口占比为 ${item.completeYear.share.toFixed(1)}%。不使用父级税目或补零代理值。`,
@@ -707,26 +711,26 @@ const exactCommodityReport = (item:CommodityRecord, base:CommodityReport):Commod
 });
 
 const reportAccuracyById: Record<string,{level:AccuracyLevel;reason:string}> = {
-  ic: { level:"低概率", reason:"直接进口依赖有数据支撑，但多节点网络排序仍缺少逐票货物流闭环。" },
-  battery: { level:"低概率", reason:"高集中度结论明确；越南及其他路径节点的优先级仍需 BOM、工序与原产地单证验证。" },
-  semiconductor: { level:"低概率", reason:"直接依赖可复核，但东盟加工节点与中国投入之间尚未形成货物级对应。" },
+  ic: { level:"高概率", reason:"2025 年 HS6 854231 的印度报告进口额、全球总额及 12 个月合计均已逐项复核；本结论不包含第三国路径认定。" },
+  battery: { level:"高概率", reason:"2025 年 HS6 850760 的年度值、月度合计和其他供应来源排名均已逐项复核；本结论仅描述进口来源集中度。" },
+  semiconductor: { level:"高概率", reason:"2025 年 HS6 854142 的年度值、月度合计和其他供应来源排名均已逐项复核；加工地与原产地仍须另行核验。" },
   fertilizer: { level:"高概率", reason:"化肥总项与四类数量来自 UN Comtrade、印度化肥部附件和 DGCI&S 原产国/装运国官方样本，且结论限定为结构性依赖和主导模式判断。" },
   fertilizer_urea: { level:"高概率", reason:"直接份额变化与阿联酋路线反证有官方数量及双边镜像数据支撑；越南路线仅按弱到中等可能性表述。" },
   fertilizer_dap: { level:"高概率", reason:"中国份额回落、替代来源和长期协议均有印度官方附件或可复核 HS6 数据支持。" },
   fertilizer_mop: { level:"高概率", reason:"多年官方数量和 2025 HS6 价值均显示中国份额极低，结论不依赖推测性路径。" },
-  fertilizer_npk: { level:"低概率", reason:"2025 自然年 HS 310520 价值与 2025-26 财年 NPK/NPKS 数量口径分化，需要 HS8、配方和企业采购数据解释。" },
-  graphite: { level:"推测", reason:"HS4 无法识别纯度、粒径和形态等受控参数，需以产品规格与许可证材料复核。" },
-  rareearth: { level:"推测", reason:"宽税号无法区分具体元素、化合物形态与最终用途，当前仅作风险假设。" },
+  fertilizer_npk: { level:"高概率", reason:"2025 自然年 HS6 310520 的进口金额与来源排名已逐项复核；印度财年 NPK/NPKS 数量仅作独立背景，不与该结论混算。" },
+  graphite: { level:"推测", reason:"HS6 250410 的贸易金额可复核，但无法识别纯度、粒径和形态等受控参数；管制关联仍需产品规格与许可证材料复核。" },
+  rareearth: { level:"推测", reason:"HS6 284690 的贸易金额可复核，但无法区分具体元素、化合物形态与最终用途；管制关联当前仅作风险假设。" },
   tunnel: { level:"高概率", reason:"项目直运由制造商官方资料支持，税号合并值明确限定为筛查池；第三国路径未作事实认定。" },
-  tunnel_843031: { level:"低概率", reason:"来源占比可复核，但税号混入采煤机和截岩机，新加坡线索也缺少同一设备闭环。" },
-  tunnel_843039: { level:"推测", reason:"低金额、高件数和不完整的上游来源使该税号难以代表完整盾构机。" },
+  tunnel_843031: { level:"高概率", reason:"HS6 843031 法定商品物项的年度金额与来源占比已逐项复核；页面明确不把该金额等同于盾构机成交额。" },
+  tunnel_843039: { level:"高概率", reason:"HS6 843039 法定商品物项的年度金额与来源占比已逐项复核；页面明确不把该金额等同于盾构机成交额。" },
   earthmoving: { level:"高概率", reason:"三个严格整车税号的合并值与车型分化均可复核，结论同时保留镜像差异和转口证据边界。" },
   earthmoving_dumptruck: { level:"高概率", reason:"中国份额上升与印尼贸易重叠有年度数据支持，但结论未把印尼路径表述为已证实转口。" },
-  earthmoving_crane: { level:"低概率", reason:"中国主导方向明确，但印度进口与中国出口镜像规模差异巨大，精确金额和趋势须逐票复核。" },
+  earthmoving_crane: { level:"高概率", reason:"HS6 870510 的印度报告进口额、全球总额和 2025 年来源结构已逐项复核；中国出口镜像数据不替代印度进口口径。" },
   earthmoving_mixer: { level:"高概率", reason:"2024—2025 整车金额和数量均显示市场规模小、中国份额较低；企业级依赖另行保留。" },
 };
 
-const defaultReportAccuracy = { level:"高概率", reason:"结论主要基于可复核的 HS4 进口规模、来源占比和审慎的证据边界表述。" } as const;
+const defaultReportAccuracy = { level:"高概率", reason:"结论主要基于可复核的真实 HS6 商品进口规模、来源占比和审慎的证据边界表述。" } as const;
 
 const formatMonthlyValue = (value:number|null) => value === null ? "—" : value.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
 
@@ -787,8 +791,8 @@ export default function Home() {
   const [minValue,setMinValue] = useState(0);
   const [selected,setSelected] = useState<CommodityRecord|null>(null);
   const [selectedSubitem,setSelectedSubitem] = useState("fertilizer");
-  const [routeValue,setRouteValue] = useState(1);
-  const [routeGrowth,setRouteGrowth] = useState(25);
+  const [routeValue,setRouteValue] = useState(.2);
+  const [routeGrowth,setRouteGrowth] = useState(20);
   const [period,setPeriod] = useState<"annual"|"pulse">("annual");
 
   useEffect(() => {
@@ -828,7 +832,7 @@ export default function Home() {
   return <main>
     <header className="topbar">
       <a className="brand" href="#top" aria-label="返回首页"><span className="brand-mark">依</span><span>中印供应链依赖图谱<small>INDIA × CHINA SUPPLY ATLAS</small></span></a>
-      <nav aria-label="主要导航"><a href="#matrix">依赖矩阵</a><a href="#fertilizer-focus">化肥专题</a><a href="#routes">路径信号</a><a href="#sources">来源中心</a><a href="#reports">报告下载</a></nav>
+      <nav aria-label="主要导航"><a href="#matrix">依赖矩阵</a><a href="#fertilizer-focus">化肥专题</a><a href="#routes">第三国路径</a><a href="#sources">来源中心</a><a href="#reports">报告下载</a></nav>
       <span className="snapshot"><i/> PUBLIC · 快照 {SNAPSHOT_DATE}</span>
     </header>
 
@@ -843,11 +847,11 @@ export default function Home() {
       <div className="hero-panel">
         <div className="period-toggle" role="group" aria-label="数据时期"><button className={period==="annual"?"active":""} onClick={()=>setPeriod("annual")}>2025 全年数据</button><button className={period==="pulse"?"active":""} onClick={()=>setPeriod("pulse")}>2026 最新已公布数据</button></div>
         {period === "annual" ? <>
-          <div className="hero-metric"><span>{matrixCommodities.length} 个具体商品物项 · 从中国进口的金额占比</span><strong>{weightedShare.toFixed(1)}<small>%</small></strong><p>这些具体商品从中国进口的金额之和 ÷ 这些商品的进口总额。所有金额均按互不重叠的真实 HS6/HS8 物项计算，不使用补零代理或父级大类重复汇总；不是印度全经济总体依赖率。</p></div>
+          <div className="hero-metric"><span>{matrixCommodities.length} 个具体商品物项 · 从中国进口的金额占比</span><strong>{weightedShare.toFixed(1)}<small>%</small></strong><p>这些具体商品从中国进口的金额之和 ÷ 这些商品的进口总额。所有金额均按互不重叠的真实 HS6 物项计算，不使用补零八位码、代理口径或父级大类重复汇总；不是印度全经济总体依赖率。</p></div>
           <div className="metric-quads"><div><span>从中国进口金额</span><strong>{formatB(chinaTotal)}</strong></div><div><span>这些商品的进口总额</span><strong>{formatB(worldTotal)}</strong></div><div><span>从中国进口占比超过一半</span><strong>{highCount}<small> 项</small></strong></div><div><span>对中国依赖最高的商品占比</span><strong>{highestShare.toFixed(1)}%</strong></div></div>
           <a className="panel-source" href={COMTRADE} target="_blank" rel="noreferrer"><span>SOURCE 01</span> UN Comtrade · 2025 · {CURRENT_HS_VERSION}（H6）↗</a>
         </> : <>
-          <div className="hero-metric pulse"><span>印度对华进口 · FY2025–26</span><strong>$131.63<small>B</small></strong><p>完整财年官方总量；与 2025 自然年商品矩阵分开展示。</p></div>
+          <div className="hero-metric pulse"><span>印度对华进口 · FY2025–26</span><strong>$131.63<small>B</small></strong><p>2025—26 整个财年的官方总量；与 2025 自然年商品矩阵分开展示。</p></div>
           <div className="metric-quads"><div><span>对华出口</span><strong>$19.47B</strong></div><div><span>进口同比</span><strong>+16.03%</strong></div><div><span>2026 年 4 月进口同比</span><strong>+20.85%</strong></div><div><span>月度库可用至</span><strong>2026.05</strong></div></div>
           <a className="panel-source" href={TIA} target="_blank" rel="noreferrer"><span>SOURCE 02</span> India TIA / DGCI&S · 访问 {SNAPSHOT_DATE} ↗</a>
         </>}
@@ -857,14 +861,14 @@ export default function Home() {
     <section className="definition-strip" id="method"><span>01</span><div><strong>“依赖”指什么？</strong><p>同一时期、同一 HS 编码下，印度自中国进口额 ÷ 印度全球进口额。它衡量的是<strong>进口来源依赖</strong>，不等于印度国内消费或生产的总体依赖。</p></div><a href="#sources">查看完整口径 ↘</a></section>
 
     <section className="section matrix-section" id="matrix">
-      <div className="section-heading"><div><p>DEPENDENCY MATRIX / 2025</p><h2>重点商品依赖矩阵</h2></div><p>基于 2025 完整自然年并统一采用 HS 2022（UN Comtrade H6）；商品编码展示为 8 位筛查码，统计金额按可复核的 HS31、HS4 或 HS6 合并口径计算，并可下钻至各子项。</p></div>
+      <div className="section-heading"><div><p>DEPENDENCY MATRIX / 2025</p><h2>重点商品依赖矩阵</h2></div><p>基于 2025 全年数据并统一采用 HS 2022（UN Comtrade H6）；矩阵中的 21 个条目均为互不重叠的真实 HS6 商品物项，不使用补零八位码、父级大类或代理口径。</p></div>
       <div className="filter-shell">
         <div className="category-tabs" role="tablist" aria-label="行业筛选">{categories.map(item=><button key={item} role="tab" aria-selected={category===item} className={category===item?"active":""} onClick={()=>setCategory(item)}>{item}</button>)}</div>
         <div className="filters"><label className="search"><span>搜索商品 / 英文 / HS</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="例如：盾构、起重机、870510"/></label><label><span>最低对华占比 <b>{minShare}%</b></span><input type="range" min="0" max="90" step="5" value={minShare} onChange={e=>setMinShare(Number(e.target.value))}/></label><label><span>最低自华进口额 <b>{minValue===0?"不限":formatB(minValue)}</b></span><input type="range" min="0" max="5" step="0.25" value={minValue} onChange={e=>setMinValue(Number(e.target.value))}/></label><button className="reset" onClick={reset}>重置筛选</button></div>
       </div>
       <div className="matrix-meta" aria-live="polite"><span>显示 {filtered.length} / {matrixCommodities.length} 个具体商品物项 · 按对华来源占比排序</span><a href={COMTRADE} target="_blank" rel="noreferrer">UN Comtrade · 2025 · HS2022（H6）· 访问 {SNAPSHOT_DATE} ↗</a></div>
       <div className="commodity-table"><div className="table-head"><span>具体商品 / 统计编码</span><span>印度从中国进口</span><span>印度进口总额</span><span>从中国进口占比</span><span>判读</span></div>{filtered.map(item=><button className="commodity-row" key={item.id} onClick={()=>openCommodity(item)} aria-label={`查看 ${item.name} 详情`}><span className="commodity-name"><b>{item.name}</b><small>{item.english}</small><code>HS 2022 · {codeLevelOf(item)} {hs8Of(item)}</code><em>{statLevelOf(item)}</em></span><span className="value-cell"><b>{formatB(item.completeYear.china)}</b><small>2025 · CIF</small></span><span className="value-cell"><b>{formatB(item.completeYear.world)}</b><small>2025 · 全球</small></span><span className="share-cell"><b>{item.completeYear.share.toFixed(1)}%</b><i><em style={{width:`${item.completeYear.share}%`}}/></i></span><span className="tag-cell">{item.controlled&&<i className="risk">管制筛查</i>}<small>详情 ↗</small></span></button>)}{filtered.length===0&&<div className="empty-state"><strong>没有符合条件的商品</strong><p>降低阈值或清除搜索词后再试。</p><button onClick={reset}>恢复全部</button></div>}</div>
-      <p className="data-note">分类版本：HS 2022（UN Comtrade H6）。页面展示 8 位筛查码：HS4/HS6 项以末位补零方式映射为 8 位，合并项以多个 8 位码并列展示。单位：十亿美元，现价美元，进口通常按 CIF 计。统计金额仍以数据源可复核的 HS31、HS4、HS6 单项或合并筛查池计算；筛查池不能等同于具体整机成交额或台数。</p>
+      <p className="data-note">分类版本：HS 2022（UN Comtrade H6）。页面如实展示数据源中的六位编码，不补零、不冒充中国海关八位编码。单位：十亿美元，现价美元，印度进口通常按 CIF 计；父级专题仅用于导航和子项汇总，不计入矩阵总额。识别具体型号、受控技术参数或整机台数时，仍须再核对中国 HS8、产品规格和业务单证。</p>
     </section>
 
     <section className="pulse-ribbon" aria-label="最新月度数据"><div><span>MONTHLY DATA UPDATE</span><strong>2026.05</strong></div><p>印度 TradeStat 月度库已更新至 2026 年 5 月；2026 年 4 月起部分 ITC HS 编码被撤销或重新分配。本版以 2025 全年数据作为可比基础，未核验的月度细项不填入代理值。</p><a href={TRADESTAT} target="_blank" rel="noreferrer">打开官方月度库 ↗</a></section>
@@ -878,12 +882,13 @@ export default function Home() {
     <section className="section spotlight"><div className="section-heading"><div><p>EQUIPMENT FOCUS</p><h2>工程设备专题</h2></div><p>仅展示具有公开贸易金额的具体 HS6 物项；盾构机识别需另结合型号和项目资料，不以宽税目金额冒充整机金额。</p></div><div className="spotlight-grid">{["tunnel_843031","earthmoving_dumptruck","machineparts"].map((id,index)=>{const item=allCommodityRecords.find(x=>x.id===id)!;return <button className="spotlight-card" key={id} onClick={()=>openCommodity(item)}><span className="card-index">0{index+1} / {codeLevelOf(item)} {hs8Of(item)}</span><div className={`equipment-visual v${index+1}`} aria-hidden="true"><i/><i/><i/></div><p>{item.english}</p><h3>{item.name}</h3><strong className="big-share">{item.completeYear.share.toFixed(1)}<small>%</small></strong><span className="card-link">查看证据卡片 ↗</span></button>})}</div></section>
 
     <section className="section route-section" id="routes">
-      <div className="section-heading inverse"><div><p>ROUTE SIGNALS / SCREENING ONLY</p><h2>可能的第三国路径信号</h2></div><p>同一 HS 组中“中国→一个或多个中转节点→印度”的可比贸易段同步上升，并同时展示“中国→印度”变化。仅用于筛查，不认定实际转口或违法。</p></div>
+      <div className="section-heading inverse"><div><p>ROUTE SIGNALS / SCREENING ONLY</p><h2>可能的第三国路径</h2></div><p>以同一真实 HS6 的逐段报告国数据筛查“中国→第三国→印度”，同时展示直接流作为对照。HS8 仅在各国本国口径可对应时用于单证核验；统计信号不认定实际转口或违法。</p></div>
       <div className="route-controls"><label><span>路径分段贸易额下限 <b>{formatM(routeValue)}</b></span><input type="range" min="0" max="3" step="0.1" value={routeValue} onChange={e=>setRouteValue(Number(e.target.value))}/></label><label><span>路径分段增幅下限 <b>{routeGrowth}%</b></span><input type="range" min="0" max="100" step="5" value={routeGrowth} onChange={e=>setRouteGrowth(Number(e.target.value))}/></label><div><strong>{activeRoutes.length}</strong><span>条路径信号</span></div></div>
-      <div className="route-list">{activeRoutes.map(route=><article className="route-card" key={route.id}><div className="route-title"><div><span>HS {route.hs} · {route.coverage}</span><h3>{route.product} / {route.hub}</h3></div><div className="route-title-actions"><em className={`reliability r-${route.reliability}`}>可靠性 {route.reliability}</em><a href={route.source} target="_blank" rel="noreferrer">UN ↗</a></div></div><div className="route-chain">{route.nodes.map((node,index)=><span key={`${route.id}-${node}-${index}`}><b className={index===0?"origin":index===route.nodes.length-1?"destination":"transit"}>{node}</b>{index<route.nodes.length-1&&<i>→</i>}</span>)}</div><div className="route-leg-list">{routeLegs(route).map(leg=><div key={`${route.id}-${leg.label}`}><span>{leg.label}</span><strong>{formatM(leg.values[0])} → {formatM(leg.values[1])}</strong><em>{signed(growth(leg.values[1],leg.values[0]))}</em></div>)}</div><p>中国→印度直接流：{formatM(route.directToIndia[0])} → {formatM(route.directToIndia[1])}（{signed(growth(route.directToIndia[1],route.directToIndia[0]))}）</p><dl className="route-analysis"><div><dt>公开数据</dt><dd>{route.evidence}</dd></div><div><dt>推演判断</dt><dd>{route.inference}</dd></div><div><dt>限制</dt><dd>{route.caveat}</dd></div></dl></article>)}</div>
-      <div className="route-subheading"><span>MULTI-NODE WATCHLIST</span><h3>多中转节点待核验网络</h3><p>目前没有达到“同一具体 HS6/HS8、同一时期、各段可复核”标准的多中转路径，因此不展示父级税目的推测路线。</p></div>
-      <div className="route-list route-network-cards">{auditedRouteNetworks.map(route=><article className="route-card" key={route.id}><div className="route-title"><div><span>HS {route.hs} · 多节点线索</span><h3>{route.product}</h3></div><div className="route-title-actions"><em className={`reliability r-${route.reliability}`}>可靠性 {route.reliability}</em><a href={route.source} target="_blank" rel="noreferrer">来源 ↗</a></div></div><div className="route-chain">{route.nodes.map((node,index)=><span key={`${route.id}-${node}-${index}`}><b className={index===0?"origin":index===route.nodes.length-1?"destination":"transit"}>{node}</b>{index<route.nodes.length-1&&<i>→</i>}</span>)}</div><dl className="route-analysis"><div><dt>公开数据</dt><dd>{route.evidence}</dd></div><div><dt>推演判断</dt><dd>{route.inference}</dd></div><div><dt>限制</dt><dd>{route.caveat}</dd></div></dl></article>)}</div>
-      {activeRoutes.length===0&&<div className="route-empty"><span>∅</span><div><strong>当前阈值下没有路径信号</strong><p>这不代表不存在转口。默认阈值要求两段贸易额均不低于 100 万美元、可比期增幅均不低于 25%；尝试降低金额阈值可查看弱信号。</p><button onClick={()=>{setRouteValue(.2);setRouteGrowth(25)}}>查看弱信号</button></div></div>}
+      <div className="route-list">{activeRoutes.map(route=><article className="route-card" key={route.id}><div className="route-title"><div><span>HS2022 H6 {route.hs} · {route.coverage}</span><h3>{route.product} / {route.hub}</h3></div><div className="route-title-actions"><em className={`reliability r-${route.reliability}`}>可靠性 {route.reliability}</em><a href={route.source} target="_blank" rel="noreferrer">数据源 ↗</a></div></div><div className="route-chain">{route.nodes.map((node,index)=><span key={`${route.id}-${node}-${index}`}><b className={index===0?"origin":index===route.nodes.length-1?"destination":"transit"}>{node}</b>{index<route.nodes.length-1&&<i>→</i>}</span>)}</div><div className="route-leg-list">{routeLegs(route).map(leg=><div key={`${route.id}-${leg.label}`}><span>{leg.label}</span><strong>{formatM(leg.values[0])} → {formatM(leg.values[1])}</strong><em>{signed(growth(leg.values[1],leg.values[0]))}</em></div>)}</div><p>中国→印度直接流：{formatM(route.directToIndia[0])} → {formatM(route.directToIndia[1])}（{signed(growth(route.directToIndia[1],route.directToIndia[0]))}）</p><div className="route-proof"><h4>推演判断过程与数据来源</h4><dl className="route-analysis"><div><dt>公开数据</dt><dd>{route.evidence}</dd></div><div><dt>判断步骤</dt><dd><ol>{route.methodSteps.map((step,index)=><li key={`${route.id}-step-${index}`}>{step}</li>)}</ol></dd></div><div><dt>推演结论</dt><dd>{route.inference}</dd></div><div><dt>数据来源</dt><dd>{route.sourceDetail}</dd></div><div><dt>限制</dt><dd>{route.caveat}</dd></div></dl></div></article>)}</div>
+      <div className="route-subheading"><span>MULTI-NODE WATCHLIST</span><h3>两个中转国的待核验网络</h3><p>以下候选要求同一真实 HS6、同一年度窗口、三段双边贸易均可复核且同步上升。它们代表需要穿透核验的供应网络，不代表同一批货物依次经过全部节点。</p></div>
+      <div className="route-list route-network-cards">{auditedRouteNetworks.map(route=><article className="route-card" key={route.id}><div className="route-title"><div><span>HS2022 H6 {route.hs} · {route.coverage} · 三段数据</span><h3>{route.product}</h3></div><div className="route-title-actions"><em className={`reliability r-${route.reliability}`}>可靠性 {route.reliability}</em><a href={route.source} target="_blank" rel="noreferrer">数据源 ↗</a></div></div><div className="route-chain">{route.nodes.map((node,index)=><span key={`${route.id}-${node}-${index}`}><b className={index===0?"origin":index===route.nodes.length-1?"destination":"transit"}>{node}</b>{index<route.nodes.length-1&&<i>→</i>}</span>)}</div><div className="route-leg-list">{route.legs.map(leg=><div key={`${route.id}-${leg.label}`}><span>{leg.label}</span><strong>{formatM(leg.values[0])} → {formatM(leg.values[1])}</strong><em>{signed(growth(leg.values[1],leg.values[0]))}</em></div>)}</div><p>中国→印度直接流：{formatM(route.directToIndia[0])} → {formatM(route.directToIndia[1])}（{signed(growth(route.directToIndia[1],route.directToIndia[0]))}）</p><div className="route-proof"><h4>推演判断过程与数据来源</h4><dl className="route-analysis"><div><dt>公开数据</dt><dd>{route.evidence}</dd></div><div><dt>判断步骤</dt><dd><ol>{route.methodSteps.map((step,index)=><li key={`${route.id}-step-${index}`}>{step}</li>)}</ol></dd></div><div><dt>推演结论</dt><dd>{route.inference}</dd></div><div><dt>数据来源</dt><dd>{route.sourceDetail}</dd></div><div><dt>限制</dt><dd>{route.caveat}</dd></div></dl></div></article>)}</div>
+      <aside className="route-case"><div><span>OFFICIAL CASE / 方法校验</span><h3>中国 → 斯里兰卡 → 印度：数字印刷版材查发案例</h3></div><p>印度蒙德拉海关裁决书记录了中国制造的 CTCP 数字印刷版材在科伦坡换装集装箱后运往印度，并以发票、原产地证书、进出提单、斯里兰卡海关材料和当事人陈述相互印证。该案例只用于说明“统计信号之后应如何闭环取证”，不代表本页上述商品发生了相同行为。</p><a href={CUSTOMS_CASE} target="_blank" rel="noreferrer">查看印度海关裁决书 ↗</a></aside>
+      {activeRoutes.length===0&&<div className="route-empty"><span>∅</span><div><strong>当前阈值下没有路径信号</strong><p>这不代表不存在转口。默认阈值要求两段贸易额均不低于 20 万美元、可比期增幅均不低于 20%；可继续降低阈值查看弱信号。</p><button onClick={()=>{setRouteValue(.1);setRouteGrowth(10)}}>查看弱信号</button></div></div>}
       <div className="route-warning"><strong>判读边界</strong><p>同步上升可能由产业扩张、库存、加工贸易、价格变化或统计差异造成。多节点路径表示需要核验的供应网络，不表示同一批货物依次经过所有国家。信号不是规避管制、非法转口或个案事实的认定；缺失月份不插值，不完整国家不进入排名。</p></div>
     </section>
 
@@ -909,10 +914,10 @@ export default function Home() {
         <h2 id="drawer-title">{selectedRecord.name}</h2>
         <p className="drawer-english">{selectedRecord.english}</p>
         {selectedChildren.length>0&&<div className="commodity-subnav" role="tablist" aria-label={`${selected.name}子项`}>
-          {[selected,...selectedChildren].map((item,index)=><button key={item.id} role="tab" aria-selected={selectedRecord.id===item.id} className={selectedRecord.id===item.id?"active":""} onClick={()=>setSelectedSubitem(item.id)}><small>{index===0?"总览":`HS8 ${hs8Of(item)}`}</small><strong>{item.name}</strong></button>)}
+          {[selected,...selectedChildren].map((item,index)=><button key={item.id} role="tab" aria-selected={selectedRecord.id===item.id} className={selectedRecord.id===item.id?"active":""} onClick={()=>setSelectedSubitem(item.id)}><small>{index===0?"总览":`${codeLevelOf(item)} ${hs8Of(item)}`}</small><strong>{item.name}</strong></button>)}
         </div>}
         <div className="drawer-tags"><code>{CURRENT_HS_VERSION} · {codeLevelOf(selectedRecord)} {hs8Of(selectedRecord)}</code><span>{statLevelOf(selectedRecord)}</span><span>{selectedRecord.category}</span>{selectedRecord.controlled&&<span className="risk">管制筛查</span>}</div>
-        <div className="report-status"><span className={`evidence-level evidence-${selectedReport.evidence.replace("中等偏低","medium-low").replace("中等","medium").replace("低","low")}`}>证据等级 · {selectedReport.evidence}</span><span>{selectedReport.status}</span></div>
+        <div className="report-status"><span className={`evidence-level evidence-${selectedReport.evidence.replace("已复核","verified").replace("中等偏低","medium-low").replace("中等","medium").replace("低","low")}`}>数据状态 · {selectedReport.evidence}</span><span>{selectedReport.status}</span></div>
         <div className="drawer-report-cover"><small>专项分析报告</small><h3>{selectedReport.title}</h3><p>{selectedReport.executive}</p></div>
         <a className="report-download-btn" href={reportHref(selectedRecord.id)} download>下载本商品 Word 分析报告 ↗</a>
         <div className="drawer-metrics"><div><span>印度自中国进口</span><strong>{formatB(selectedRecord.completeYear.china)}</strong></div><div><span>印度全球进口</span><strong>{formatB(selectedRecord.completeYear.world)}</strong></div><div><span>对华来源占比</span><strong>{selectedRecord.completeYear.share.toFixed(1)}%</strong></div></div>
@@ -949,7 +954,7 @@ export default function Home() {
         <section><h3>商品定义与口径</h3><p>{selectedRecord.definition}</p></section>
         <section><div className="drawer-section-title"><h3>月度数据与趋势</h3><span>2024-12—2026-06 · {CURRENT_HS_VERSION} · {codeLevelOf(selectedRecord)} {hs8Of(selectedRecord)} · {statLevelOf(selectedRecord)}</span></div><MonthlyTrend points={selectedMonthly}/></section>
         <section><div className="drawer-section-title"><h3>五年趋势</h3><span>2021—2025 · {CROSSWALK_HS_VERSION} · 对华来源占比</span></div>{selectedRecord.trend?<div className="trend-chart">{selectedRecord.trend.map(point=><div className="trend-year" key={point.year}><span>{point.share.toFixed(1)}%</span><div><i style={{height:`${Math.max(6,point.share)}%`}}/></div><small>{point.year}</small></div>)}</div>:<div className="trend-unavailable"><strong>未跨版本合并</strong><p>该子项展示 HS 2022 月度序列；尚未建立可靠的 HS 2017→2022 年度对照序列。</p></div>}</section>
-        <section><h3>主要替代供应国</h3><div className="alternatives">{selectedRecord.alternatives.map(country=><span key={country}>{country}</span>)}</div><p>按可比双边数据识别，表示其他来源，不代表短期内具备等量替代能力，也不自动构成中转国。</p></section>
+        <section><h3>2025 年其他主要供应来源</h3><div className="alternatives">{selectedRecord.alternatives.length ? selectedRecord.alternatives.map(country=><span key={country}>{country}</span>) : <span>未报告其他境外来源</span>}</div><p>按同一真实 HS6 的印度进口金额排序并排除中国，表示其他来源，不代表短期内具备等量替代能力，也不自动构成中转国。</p></section>
         <section className="report-references"><h3>证据来源</h3><ul>{selectedReport.references.map(reference=><li key={reference}>{reference}</li>)}</ul><p>报告研究日期：{REPORT_DATE}。路径证据用于风险筛查，不构成违法转口、规避关税或规避管制的认定。</p></section>
         <section className="pulse-box"><h3>2026 月度数据说明</h3><p>TradeStat 已发布 2026 年部分月份；尚未核验的数据保持为空，不用估算值替代全年数据。</p><a href={TRADESTAT} target="_blank" rel="noreferrer">India TradeStat · 更新 2026-07-15 ↗</a></section>
         <section className="control-box"><h3>{hs8ProfileOf(selectedRecord).controlCategory} · {hs8ProfileOf(selectedRecord).controlStatus}</h3><p><strong>管制参数：</strong>{hs8ProfileOf(selectedRecord).controlParameters}</p><p><strong>生效口径：</strong>{hs8ProfileOf(selectedRecord).controlEffective}。HS 编码仅用于统计筛查，不能替代技术参数、最终用户和最终用途判定。</p><a href={CONTROL_CATALOG} target="_blank" rel="noreferrer">核对中国现行出口管制目录 ↗</a></section>
