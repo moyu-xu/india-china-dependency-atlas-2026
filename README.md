@@ -49,7 +49,7 @@ npm run preview
 
 ## 数据口径
 
-- 2025 完整自然年矩阵来自 UN Comtrade 静态快照；主体商品使用 HS4，化肥总览使用 HS31，并下钻至尿素、DAP、MOP、NPK 四个 HS6 子项。
+- 2025 完整自然年矩阵来自 UN Comtrade 静态快照；主体商品使用 HS4，化肥总览使用 HS31；盾构机使用 HS 843031/843039 筛查池，工程车使用 HS 870410/870510/870540 整车组合，均可下钻到 HS6 子项。
 - 商品详情的月度序列覆盖 2024-12—2026-06；没有从官方 API 取回的月份保留为空，不插值、不预测。
 - 2026 最新数据引用印度 DGCI&S TradeStat 与贸易情报和分析门户。
 - 页面浏览时不会调用外部数据 API；外部请求仅发生在用户主动打开来源链接或加载 Google Fonts 时。
@@ -58,9 +58,9 @@ npm run preview
 
 ## 更新数据
 
-年度矩阵、商品分析、化肥父项/子项、结论与准确度规则位于 `src/App.tsx`；月度记录位于 `src/data/monthlyTrade.ts`。人工更新时可直接修改对应商品 ID 下的月份、进口额、占比与状态。化肥相关 ID 为 `fertilizer`、`fertilizer_urea`、`fertilizer_dap`、`fertilizer_mop`、`fertilizer_npk`。
+年度矩阵、商品分析、父项/子项、结论与准确度规则位于 `src/App.tsx`；月度记录位于 `src/data/monthlyTrade.ts`。人工更新时可直接修改对应商品 ID 下的月份、进口额、占比与状态。盾构机相关 ID 为 `tunnel`、`tunnel_843031`、`tunnel_843039`；工程车相关 ID 为 `earthmoving`、`earthmoving_dumptruck`、`earthmoving_crane`、`earthmoving_mixer`。
 
-也可以运行下列命令，按当前 HS31、HS4 与 HS6 编码从 UN Comtrade 重新生成整个月度文件：
+也可以运行下列命令，按当前 HS31、HS4、HS6 单项及合并编码从 UN Comtrade 重新生成整个月度文件：
 
 ```bash
 node scripts/fetch-monthly-data.mjs

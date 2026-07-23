@@ -22,8 +22,13 @@ const commodities = {
   valves: "8481",
   toolparts: "8466",
   machineparts: "8431",
-  tunnel: "8430",
-  earthmoving: "8429",
+  tunnel: ["843031", "843039"],
+  tunnel_843031: "843031",
+  tunnel_843039: "843039",
+  earthmoving: ["870410", "870510", "870540"],
+  earthmoving_dumptruck: "870410",
+  earthmoving_crane: "870510",
+  earthmoving_mixer: "870540",
   autoparts: "8708",
 };
 
@@ -45,7 +50,7 @@ async function fetchPeriod(period, attempt = 1) {
     reporterCode: "699",
     partnerCode: "0,156",
     flowCode: "M",
-    cmdCode: Object.values(commodities).join(","),
+    cmdCode: [...new Set(Object.values(commodities).flat())].join(","),
     partner2Code: "0",
     customsCode: "C00",
     motCode: "0",
@@ -88,18 +93,19 @@ function render(results) {
   ];
 
   for (const [id, hs] of Object.entries(commodities)) {
+    const hsCodes = Array.isArray(hs) ? hs : [hs];
     lines.push(`  ${id}: [`);
     for (const result of results) {
-      const records = result.data.filter((row) => row.cmdCode === hs);
-      const worldRow = records.find((row) => row.partnerCode === 0);
-      const chinaRow = records.find((row) => row.partnerCode === 156);
+      const records = result.data.filter((row) => hsCodes.includes(row.cmdCode));
+      const worldRows = records.filter((row) => row.partnerCode === 0);
+      const chinaRows = records.filter((row) => row.partnerCode === 156);
       const period = `${result.period.slice(0, 4)}-${result.period.slice(4)}`;
-      if (!worldRow) {
+      if (worldRows.length === 0) {
         lines.push(`    { period: \"${period}\", china: null, world: null, share: null, status: \"pending\" },`);
         continue;
       }
-      const china = (chinaRow?.primaryValue ?? 0) / 1_000_000;
-      const world = worldRow.primaryValue / 1_000_000;
+      const china = chinaRows.reduce((sum, row) => sum + (row.primaryValue ?? 0), 0) / 1_000_000;
+      const world = worldRows.reduce((sum, row) => sum + (row.primaryValue ?? 0), 0) / 1_000_000;
       const share = world > 0 ? (china / world) * 100 : 0;
       lines.push(`    { period: \"${period}\", china: ${china.toFixed(2)}, world: ${world.toFixed(2)}, share: ${share.toFixed(1)}, status: \"available\" },`);
     }

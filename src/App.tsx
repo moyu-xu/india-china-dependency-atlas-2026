@@ -92,8 +92,8 @@ const commodities: CommodityRecord[] = [
   { id: "valves", hs: "8481", name: "阀门与流体控制件", english: "Taps, cocks and valves", category: "工业机械", completeYear: annual(0.5806, 2.4093), latestPulse: pulse, alternatives: ["德国", "美国", "意大利", "日本"], definition: "用于能源、化工、工程机械及工厂自动化。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
   { id: "toolparts", hs: "8466", name: "机床零部件", english: "Parts and accessories for machine-tools", category: "工业机械", completeYear: annual(0.2140, 0.8307), latestPulse: pulse, alternatives: ["德国", "日本", "意大利", "中国台湾"], definition: "包括夹具、分度头和专用附件，是制造设备维护的重要投入。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
   { id: "machineparts", hs: "8431", name: "工程机械零部件", english: "Parts for machinery of headings 8425–8430", category: "工程设备", completeYear: annual(1.0636, 1.9446), latestPulse: pulse, alternatives: ["德国", "日本", "美国", "韩国"], definition: "覆盖起重、装卸、土方和隧道设备零件，比整机口径更能反映存量设备维保黏性。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE, trend: [{year:"2021",china:0.63,world:1.56,share:40.4},{year:"2022",china:0.69,world:1.53,share:44.9},{year:"2023",china:0.82,world:1.66,share:49.3},{year:"2024",china:0.94,world:1.76,share:53.1},{year:"2025",china:1.0636,world:1.9446,share:54.7}] },
-  { id: "tunnel", hs: "8430", name: "隧道与土方机械", english: "Moving, grading and tunnelling machinery", category: "工程设备", completeYear: annual(0.2089, 0.4273), latestPulse: pulse, alternatives: ["德国", "美国", "日本", "意大利"], definition: "盾构机/隧道掘进机代理口径。HS 8430 还包含其他土方和采掘机械，不能视为盾构机专属值。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE, proxy: true, trend: [{year:"2021",china:0.11,world:0.38,share:30.2},{year:"2022",china:0.29,world:0.57,share:50.9},{year:"2023",china:0.16,world:0.33,share:48.4},{year:"2024",china:0.15,world:0.35,share:43.4},{year:"2025",china:0.2089,world:0.4273,share:48.9}] },
-  { id: "earthmoving", hs: "8429", name: "自推进式工程车辆", english: "Bulldozers, excavators and loaders", category: "工程设备", completeYear: annual(0.2212, 0.4790), latestPulse: pulse, alternatives: ["日本", "韩国", "美国", "德国"], definition: "工程车代理口径，覆盖推土机、挖掘机、装载机和压路机等，不含全部专用车辆。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE, proxy: true },
+  { id: "tunnel", hs: "843031/843039", name: "盾构机", english: "Tunnel boring machines", category: "工程设备", completeYear: annual(0.042488353, 0.108409376), latestPulse: pulse, alternatives: ["欧盟", "芬兰", "美国", "新加坡", "南非"], definition: "土压平衡盾构机、泥水平衡盾构机与硬岩 TBM 的项目级观察项。HS 843031 与 843039 同时混入采煤机、截岩机和其他掘进设备，只能作为整机贸易筛查池，不能把合计金额等同于盾构机成交额或台数。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE, proxy: true, searchTerms: "盾构 TBM 隧道掘进机 土压平衡 泥水平衡 硬岩 843031 843039", children: ["tunnel_843031","tunnel_843039"] },
+  { id: "earthmoving", hs: "870410/870510/870540", name: "工程车", english: "Special-purpose construction vehicles", category: "工程设备", completeYear: annual(0.022815544, 0.059909220), latestPulse: pulse, alternatives: ["德国", "日本", "美国", "芬兰", "印度尼西亚"], definition: "工程车整车筛查项，合并非公路用自卸车、汽车起重机和混凝土搅拌车三个 HS6 子项。未纳入混合消防、医疗等多类专用车辆的 HS 870590，也不包含一般挖掘机、装载机或零部件。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE, searchTerms: "工程车 矿用自卸车 汽车起重机 混凝土搅拌车 870410 870510 870540", children: ["earthmoving_dumptruck","earthmoving_crane","earthmoving_mixer"] },
   { id: "autoparts", hs: "8708", name: "机动车零部件", english: "Parts and accessories of motor vehicles", category: "车辆零部件", completeYear: annual(1.7536, 6.8000), latestPulse: pulse, alternatives: ["德国", "日本", "韩国", "美国"], definition: "宽口径汽车零部件组；电驱、底盘、车身与安全系统需在 HS6/8 层级进一步区分。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
 ];
 
@@ -103,6 +103,23 @@ const fertilizerSubitems: CommodityRecord[] = [
   { id: "fertilizer_mop", hs: "310420", name: "氯化钾（MOP）", english: "Potassium chloride", category: "医药化工", completeYear: annual(0.000025641, 1.251671655), latestPulse: pulse, alternatives: ["俄罗斯", "加拿大", "约旦", "白俄罗斯"], definition: "HS 310420 氯化钾（MOP）。印度几乎完全依赖进口，但中国在该品类中不是关键直接来源。", sourcePublished: "2026-07", accessedAt: "2026-07-23" },
   { id: "fertilizer_npk", hs: "310520", name: "NPK 复合肥", english: "NPK fertilizers", category: "医药化工", completeYear: annual(0.009068417, 1.209994350), latestPulse: pulse, alternatives: ["沙特阿拉伯", "俄罗斯", "摩洛哥", "约旦"], definition: "HS 310520 为含氮、磷、钾三种肥效元素的矿物或化学肥料。印度官方 NPK/NPKS 财年统计可能覆盖更宽子目，与 HS 310520 价值口径不能直接互换。", sourcePublished: "2026-07", accessedAt: "2026-07-23", proxy: true },
 ];
+
+const tunnelSubitems: CommodityRecord[] = [
+  { id: "tunnel_843031", hs: "843031", name: "自推进掘进机筛查池", english: "Self-propelled tunnelling machinery screening pool", category: "工程设备", completeYear: annual(0.040596479, 0.102945050), latestPulse: pulse, alternatives: ["欧盟", "芬兰", "美国", "新加坡", "南非"], definition: "HS 843031 为自推进的采煤机、截岩机及隧道掘进机械筛查池，包含但不专属于盾构机或 TBM。金额只能反映宽口径来源结构，不能直接换算整机台数。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE, proxy: true },
+  { id: "tunnel_843039", hs: "843039", name: "其他掘进设备筛查池", english: "Other tunnelling machinery screening pool", category: "工程设备", completeYear: annual(0.001891874, 0.005464327), latestPulse: pulse, alternatives: ["新加坡", "德国", "美国", "芬兰"], definition: "HS 843039 为其他非自推进采煤机、截岩机及隧道掘进机械筛查池。报告所示数量与价值明显不匹配，作为盾构机代理的杂质较高，只用于发现异常线索。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE, proxy: true },
+];
+
+const earthmovingSubitems: CommodityRecord[] = [
+  { id: "earthmoving_dumptruck", hs: "870410", name: "非公路用自卸车", english: "Off-highway dump trucks", category: "工程设备", completeYear: annual(0.022185146, 0.057239066), latestPulse: pulse, alternatives: ["印度尼西亚", "德国", "日本", "美国"], definition: "HS 870410 为非公路用自卸车，主要包括矿山、采石场等封闭场景使用的整车；不包含一般道路货车和零部件。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
+  { id: "earthmoving_crane", hs: "870510", name: "汽车起重机", english: "Mobile cranes", category: "工程设备", completeYear: annual(0.000400126, 0.000606105), latestPulse: pulse, alternatives: ["德国", "日本", "美国", "芬兰"], definition: "HS 870510 为装在汽车底盘上的起重机整车。印度进口申报与中国出口镜像金额存在巨大差异，必须分开列示，不能互相替代。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
+  { id: "earthmoving_mixer", hs: "870540", name: "混凝土搅拌车", english: "Concrete mixer trucks", category: "工程设备", completeYear: annual(0.000230272, 0.002064049), latestPulse: pulse, alternatives: ["德国", "日本", "韩国", "意大利"], definition: "HS 870540 为混凝土搅拌运输车整车。公开贸易规模小、订单稀疏，单月或单年波动可能主要由少数车辆交付造成。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
+];
+
+const commoditySubitemsByParent: Record<string,CommodityRecord[]> = {
+  fertilizer: fertilizerSubitems,
+  tunnel: tunnelSubitems,
+  earthmoving: earthmovingSubitems,
+};
 
 const commodityReports: Record<string, CommodityReport> = {
   ic: {
@@ -369,30 +386,54 @@ const commodityReports: Record<string, CommodityReport> = {
     references: ["研究报告第 8—9 页：HS 8431 分析", "2021—2025 HS4 趋势数据"],
   },
   tunnel: {
-    title: "隧道与土方机械代理口径分析",
-    evidence: "低",
-    status: "直接供应优势为主",
-    executive: "HS 8430 对华来源占比接近一半，但该税号并非盾构机专属；公开数据未显示可量化的第三国转口链。",
-    dataPoints: ["2025 年印度自中国进口 2.09 亿美元，全球进口 4.27 亿美元，对华来源占比 48.9%。", "2021—2025 年占比在 30.2%—50.9% 区间波动，未呈单向持续上升。", "该商品属于报告列明的“代理编码”和“无公开量化转口数据”品类。"],
-    routes: [],
-    routeBoundary: "HS 8430 同时覆盖多类土方、采掘和隧道设备，不能将全部贸易额归因于盾构机，也不能据此推断设备经第三国转运。",
-    analysis: ["项目型设备贸易容易受单笔大额合同影响，年度波动不宜直接解释为结构变化。", "替代评估需结合设备类型、施工工法、备件体系和服务能力。"],
-    conclusion: "当前结论是中国直供竞争力较强，但多国路径未被公开数据证实。应在项目和设备序列号层面核验。",
-    monitoring: ["盾构机与其他土方设备拆分", "大额项目合同与交付批次", "设备序列号、制造商与装运港"],
-    references: ["研究报告第 8—9 页：HS 8430 分析", "2021—2025 HS4 趋势数据"],
+    title: "印度盾构机项目依赖与转口链审查",
+    evidence: "中等",
+    status: "项目型依赖 · 税号仅作筛查",
+    executive: "公开项目证据可以确认中国厂商向印度重大隧道工程直接交付盾构机，但 HS 843031/843039 不是盾构机专属税号。2025 年合并筛查池的对华来源占比为 39.2%，只能用于观察来源暴露，不能当作盾构机成交额或台数。",
+    dataPoints: ["2025 年 HS 843031 与 843039 合并口径下，印度自中国进口约 4248.84 万美元，全球进口约 1.0841 亿美元，对华来源占比 39.2%。", "报告整理的 2024 年印度进口数据显示：HS 843031 自中国进口 654.49 万美元、43 件；HS 843039 自中国进口 14.89 万美元、558 件，后者的低价值与高件数说明其作为盾构机代理的杂质很高。", "中国铁建重工官方项目资料显示，至少有 5 台泥水平衡盾构机用于孟买沿海公路和班加罗尔两个项目；孟买设备于 2020 年 3 月从上海直接发往孟买。"],
+    routes: [
+      { nodes:["中国","印度"], label:"上海—孟买项目直运", basis:"中国铁建重工官方项目资料明确记载设备在长沙制造、从上海装船并直接发往孟买，是项目级直供证据。" },
+      { nodes:["中国","新加坡","印度"], label:"HS 843031 新加坡中转强线索", basis:"2024 年印度自新加坡进口 827.9 万美元，同期新加坡自中国进口 9661.4 万美元；两端规模支持筛查，但未闭合原产地与逐票流向。" },
+      { nodes:["中国","新加坡","印度"], label:"HS 843039 新加坡中转一般线索", basis:"印度自新加坡进口约 37.4 万美元，但缺少新加坡进口端的中国原产对应闭环，证据弱于 HS 843031。" },
+    ],
+    routeBoundary: "报告没有取得任何 A 级“同一货物由中国出口、第三国再出口、最终进入印度项目”的闭环单证。新加坡路径只能视为贸易重叠线索；已知孟买项目反而有直接运输证据。",
+    analysis: ["盾构机是低频、大额、按项目定制的资本品，年度贸易值极易被少数合同左右。项目合同、设备序列号、制造商交付记录比宽税号占比更能说明真实依赖。", "印度对中国的依赖主要体现在大直径泥水平衡盾构机的制造、交付、备件与现场服务能力。芬兰、欧洲、美国等来源可构成替代，但工法适配、直径、地质条件和服务体系决定了替代并非同质。"],
+    conclusion: "高可信结论是中国厂商已形成对印度重大隧道项目的直接供货能力；39.2% 仅代表两个 HS6 筛查池的来源占比。第三国转口尚未证实，新加坡只应列入后续单证核验名单。",
+    monitoring: ["项目合同、设备序列号与制造商交付记录", "盾构直径、工法、地质适配及备件服务", "新加坡贸易商的原产地证书、提单与再出口申报"],
+    references: ["《印度对中国盾构机与工程车依赖及转口链审查》", "UN Comtrade / WITS：HS 843031、843039", "中国国资委：中国铁建重工孟买沿海公路盾构机项目资料"],
+  },
+  tunnel_843031: {
+    title: "HS 843031 自推进掘进机械筛查报告", evidence: "中等偏低", status: "盾构相关筛查池 · 新加坡强线索",
+    executive: "该税号是盾构机最重要的公开贸易筛查池之一，但同时包含自推进采煤机和截岩机。2025 年中国占比约 39.4%；数值能反映来源暴露，不能独立证明盾构整机数量。",
+    dataPoints: ["2025 年印度自中国进口约 4059.65 万美元，全球进口约 1.0295 亿美元，对华来源占比 39.4%。", "2024 年报告口径下，中国金额 654.49 万美元、43 件，在欧盟、芬兰、美国、新加坡、南非之后，宽税号层面并非中国主导。", "2024 年印度自新加坡进口 827.9 万美元，而新加坡自中国进口 9661.4 万美元、2772 件，形成较强但未闭环的转口筛查线索。"],
+    routes: [{nodes:["中国","新加坡","印度"],label:"新加坡贸易重叠筛查",basis:"两端贸易规模同时可见，但没有同一设备的序列号、原产地证书和再出口单证，不能认定实际转口。"}],
+    routeBoundary: "HS 843031 产品构成复杂；即便两段贸易同年重叠，也可能是不同设备或零部件。", analysis: ["2024—2025 数值变化可能来自少数项目交付，也可能来自采矿机械，不能直接解释为盾构需求突然上升。", "验证时应优先用设备名称、刀盘直径、工法和序列号把真正 TBM 从税号池中剥离。"],
+    conclusion: "中国来源暴露值得关注，新加坡是首要核验节点；但“印度约四成盾构机来自中国”这一表述不成立，准确说法应是 HS 843031 筛查池约四成来自中国。", monitoring:["设备品名与序列号","新加坡再出口原产地","项目交付月份与单笔金额"], references:["专题报告 HS 843031 附表","UN Comtrade 2025 HS 843031","WITS 2024 双边贸易数据"],
+  },
+  tunnel_843039: {
+    title: "HS 843039 其他掘进设备筛查报告", evidence: "低", status: "高杂质筛查池",
+    executive: "该税号对盾构机的指向性较弱。2025 年中国占比约 34.6%，但 2024 年出现低金额、高件数组合，说明大量申报很可能不是完整盾构机。",
+    dataPoints:["2025 年印度自中国进口约 189.19 万美元，全球进口约 546.43 万美元，对华来源占比 34.6%。","2024 年中国金额仅 14.89 万美元却申报 558 件，无法按完整盾构机理解。","2024 年印度自新加坡进口约 37.4 万美元、11 件；新加坡全球出口约 346.8 万美元，但缺少中国原产入口闭环。"],
+    routes:[{nodes:["中国","新加坡","印度"],label:"新加坡弱线索",basis:"只有印度进口端和新加坡全球出口端可比，缺少对应中国来源数据，因此仅作假设。"}], routeBoundary:"数量、单价和货物定义均不足，不能由该税号推断盾构机台数或转口比例。", analysis:["该税号更适合发现异常申报和项目交付时间，而不适合测量整机依赖。","若业务数据能提供型号和净重，可先排除配件、小型截岩设备及非自推进装置。"], conclusion:"目前只能推测其中存在少量盾构相关设备；中国依赖程度和新加坡路径均需业务数据验证。", monitoring:["单价、净重与设备型号","完整整机/部件申报区分","新加坡进口来源与再出口提单"], references:["专题报告 HS 843039 附表","UN Comtrade 2025 HS 843039","WITS 2024 双边贸易数据"],
   },
   earthmoving: {
-    title: "自推进式工程车辆来源依赖分析",
-    evidence: "低",
-    status: "无公开量化转口数据",
-    executive: "该代理编码对华来源占比为 46.2%，中国直供具有明显价格与产能优势，但现有公开来源无法识别经两国或三国中转的金额链。",
-    dataPoints: ["2025 年印度自中国进口 2.21 亿美元，全球进口 4.79 亿美元，对华来源占比 46.2%。", "HS 8429 覆盖推土机、挖掘机、装载机和压路机等，不等同于单一车型。", "日本、韩国、美国、德国为替代供应来源，未被报告认定为中转节点。"],
-    routes: [],
-    routeBoundary: "整机可能在第三国进行附件加装或本地化配置，但公开 HS4 贸易数据不足以证明连续多节点流转。",
-    analysis: ["工程车辆采购具有项目周期和品牌服务网络特征，年度金额容易受大单影响。", "实际依赖需同时考察整机、发动机、液压系统、电子控制和售后零件。"],
-    conclusion: "应判定为“中高直接依赖、转口证据不足”。替代策略应从车型与关键总成层面展开。",
-    monitoring: ["车型与关键总成拆分", "项目采购和融资来源", "制造地、加装地与最终装运地"],
-    references: ["研究报告第 8—9 页：HS 8429 分析", "2025 HS4 依赖矩阵"],
+    title: "印度工程车整车依赖与转口链审查", evidence: "中等", status: "车型依赖显著分化",
+    executive: "工程车不能用一个宽税号概括。2025 年三个严格整车子项合并后中国占比约 38.1%；其中汽车起重机占比最高，非公路用自卸车贡献绝大多数金额，混凝土搅拌车依赖较低。",
+    dataPoints:["2025 年 HS 870410、870510、870540 合并口径下，印度自中国进口约 2281.55 万美元，全球进口约 5990.92 万美元，对华来源占比 38.1%。","报告显示 2024 年非公路用自卸车中国份额为 43.3%；汽车起重机的中国出口镜像金额为 2.2969 亿美元，超过其后四国合计 56 倍以上；混凝土搅拌车总贸易规模很小。","不同报告方向存在显著镜像差异，尤其是汽车起重机和自卸车，不能把中国出口统计与印度进口统计直接混为一列。"],
+    routes:[{nodes:["中国","印度尼西亚","印度"],label:"非公路用自卸车的印尼强线索",basis:"2024 年印度自印尼进口 848.8 万美元，同期中国对印尼出口 2.6847 亿美元；缺少原产地闭环，仍不能认定转口。"},{nodes:["中国","新加坡","印度"],label:"运输设备分拨背景",basis:"DGCI&S 宽口径运输设备样本显示约 5.9% 经新加坡装运；该比例不能直接外推到任何单一工程车型。"}],
+    routeBoundary:"报告没有取得工程车的逐票闭环转口证据。印尼、新加坡和香港只能作为单证审计的优先节点，不能被标注为已确认中转国。", analysis:["中国依赖呈车型分化：自卸车决定金额规模，起重机体现高集中度信号，搅拌车则是低规模、低稳定性市场。合并值只能用于总览，采购判断必须进入子项。","镜像差异可能来自 FOB/CIF、时间错配、转口、退运、分类差异或漏报。差异本身是审计触发器，不是转口证据。"], conclusion:"可确认中国是印度工程车的重要整车来源，但依赖程度必须分车型描述。印尼转口线索值得优先核验，尚不能认定存在稳定的中国—第三国—印度转口链。", monitoring:["车型、底盘号与设备序列号","印度进口与中国出口镜像差异","印尼/新加坡原产地证书与提单"], references:["《印度对中国盾构机与工程车依赖及转口链审查》","UN Comtrade / WITS：HS 870410、870510、870540","DGCI&S 原产国/装运国专题"],
+  },
+  earthmoving_dumptruck: {
+    title:"非公路用自卸车依赖与印尼路径审查", evidence:"中等", status:"金额主体 · 印尼强线索", executive:"非公路用自卸车是工程车组合的金额主体。2025 年中国份额约 38.8%；2019—2024 年印度进口口径总体上升，但镜像差异很大。",
+    dataPoints:["2025 年印度自中国进口约 2218.51 万美元，全球进口约 5723.91 万美元，对华来源占比 38.8%。","报告所列印度进口口径中，中国份额由 2019 年 14.1% 上升至 2024 年 43.3%，中间年份波动明显；2021 年 9975 件的数量异常需单独核验。","2024 年印度自中国进口 1807.46 万美元，而中国出口镜像为 3978.38 万美元；统计方向差异超过一倍。"], routes:[{nodes:["中国","印度尼西亚","印度"],label:"印尼转口筛查",basis:"印度自印尼进口 848.8 万美元、35 件，同时中国对印尼出口 2.6847 亿美元、2206 件；缺少同车对应和原产地闭环。"}], routeBoundary:"贸易规模重叠不等于同一车辆转口；必须通过车架号、原产地证书、提单和印尼是否发生实质加工核验。", analysis:["2019—2024 的份额上升支持中国重要性增强，但年度订单和矿业项目会造成显著波动。","印尼拥有矿业车辆需求和装配活动，既可能是终端市场，也可能是区域供货节点；公开统计无法区分。"], conclusion:"中国已是非公路用自卸车的重要来源，印尼是高优先级核验节点；是否存在中国原产车辆经印尼转口，仍未被公开证据证明。", monitoring:["车架号、品牌与制造工厂","2021 年异常数量申报","印尼进口—再出口逐票对应"], references:["专题报告 HS 870410 年度表","UN Comtrade 2025 HS 870410","WITS 2024 中国—印尼—印度数据"],
+  },
+  earthmoving_crane: {
+    title:"汽车起重机高集中度与镜像差异报告", evidence:"中等偏低", status:"高集中信号 · 统计差异巨大", executive:"汽车起重机显示最强的中国来源集中度，但印度进口与中国出口镜像金额差异异常大，必须把依赖信号与数值可信度分开判断。",
+    dataPoints:["2025 年印度进口申报中，自中国约 40.01 万美元，全球约 60.61 万美元，对华来源占比 66.0%。","中国出口镜像数据显示，2023 年对印度 1.6535 亿美元、1522 件，2024 年 2.2969 亿美元、1789 件，金额同比增长 38.9%。","报告测算 2024 年中国镜像金额超过其后四个来源合计 56 倍以上，但这一规模与印度进口侧数据严重不一致。"], routes:[], routeBoundary:"在申报方向、计量单位和产品分类未对齐前，不应根据镜像差额推断第三国转口。", analysis:["66.0% 的 2025 来源占比支持中国主导信号，但绝对金额很小，与上一年中国镜像统计形成断裂。","优先核查是否存在单位、底盘/上装拆分、临时进口、项目设备回运或税号错分。"], conclusion:"中国高度重要这一方向性判断具有依据，但精确市场规模和年度变化为低概率结论；当前不能据镜像差额认定转口。", monitoring:["底盘与起重上装是否拆分申报","计量单位、临时进口与退运","中印镜像数据逐票对账"], references:["专题报告 HS 870510 镜像贸易表","UN Comtrade 2025 HS 870510","WITS 中国出口与印度进口数据"],
+  },
+  earthmoving_mixer: {
+    title:"混凝土搅拌车低规模依赖报告", evidence:"中等偏低", status:"低规模 · 低中国暴露", executive:"混凝土搅拌车进口规模很小，2025 年中国占比约 11.2%。当前公开数据不支持将其列为对华高依赖车型，也没有可量化转口链。",
+    dataPoints:["2025 年印度自中国进口约 23.03 万美元，全球进口约 206.40 万美元，对华来源占比 11.2%。","2024 年印度全球进口约 39.84 万美元、15 件；中国出口镜像约 11.07 万美元、1 件。","少数车辆即可显著改变年度金额和份额，因此不宜对短期趋势作结构性解释。"], routes:[], routeBoundary:"没有形成中国—第三国—印度的金额、时间和货物闭环；不列示猜测性中转国。", analysis:["低金额与低频交付意味着供应风险更取决于具体品牌、底盘和售后，而非总体贸易份额。","若业务采购集中于少数中国品牌，企业级依赖仍可能高于全国统计值。"], conclusion:"全国贸易口径下，中国不是混凝土搅拌车的主导来源；结论可用于总体筛查，但企业采购依赖仍需订单数据验证。", monitoring:["品牌、底盘和搅拌上装来源","企业采购订单与售后网络","单车价格和数量单位异常"], references:["专题报告 HS 870540 数据表","UN Comtrade 2025 HS 870540","WITS 2024 双边贸易数据"],
   },
   autoparts: {
     title: "机动车零部件多来源供应与路径评估",
@@ -424,9 +465,11 @@ const routes: RouteSignal[] = [
 const sources = [
   { tag:"IN", title:"印度 DGCI&S TradeStat", detail:"月度库已更新至 2026 年 5 月，最后更新 2026-07-15；2026 年 4 月起部分 ITC HS 编码调整。", period:"2018-01—2026-05", url:TRADESTAT },
   { tag:"TIA", title:"印度贸易情报与分析门户", detail:"FY2025–26 对华进口 1,316.3 亿美元、出口 194.7 亿美元；来源为 DGCIS。", period:"FY2025–26", url:TIA },
-  { tag:"UN", title:"UN Comtrade API", detail:"2025 HS4 依赖矩阵、化肥 HS31/HS6 子项、精选五年趋势与第三国路径样本的可复核双边贸易值。", period:"2021—2025 / 路径 2023—2024", url:COMTRADE },
+  { tag:"UN", title:"UN Comtrade API", detail:"2025 HS4 依赖矩阵、化肥 HS31/HS6、盾构机及工程车 HS6 筛查项、精选五年趋势与第三国路径样本。", period:"2021—2025 / 路径 2023—2024", url:COMTRADE },
   { tag:"FERT", title:"印度化肥部国别—品类附件", detail:"尿素、DAP、MOP、NPK 的财年进口量、对华份额、库存及长期采购协议；与自然年价值口径分开展示。", period:"FY2020–21—FY2025–26", url:"https://sansad.in/getFile/loksabhaquestions/annex/187/AU5699_atvOoH.pdf?source=pqals" },
   { tag:"ROUTE", title:"DGCI&S 化肥直接/间接装运专题", detail:"官方样本显示中国原产化肥 99.9% 直接自中国装运、0.1% 经其他国家装运。", period:"2021-04—2022-02", url:"https://www.dgciskol.gov.in/writereaddata/Downloads/20220504100946Import_from_China_Apr_Feb_2021_22.pdf" },
+  { tag:"TBM", title:"中国铁建重工孟买盾构项目资料", detail:"制造商项目资料记录长沙制造、上海装船并直接发往孟买，并披露此前向班加罗尔交付 4 台泥水平衡盾构机。", period:"2020-03", url:"https://en.sasac.gov.cn/2020/03/25/c_4298.htm" },
+  { tag:"VEH", title:"DGCI&S 原产国与装运国专题", detail:"提供运输设备直接装运及经新加坡、香港等地装运的宽口径背景；不能外推为单一车型转口比例。", period:"2021-04—2022-02", url:"https://www.dgciskol.gov.in/writereaddata/Downloads/20220504100946Import_from_China_Apr_Feb_2021_22.pdf" },
   { tag:"GOI", title:"印度议会答复 4023/2025", detail:"说明对华进口以原材料、中间品、资本品、电子零件、机械及零件等为主。", period:"2025-03-25", url:"https://www.commerce.gov.in/wp-content/uploads/2025/03/LS-USQ-No.4023-dated.-25.03.2025.pdf" },
   { tag:"CN", title:"两用物项出口管制条例与 2026 目录", detail:"管制编码和技术参数优先于 HS 参考编码；最终用户与最终用途同样影响判定。", period:"现行", url:CONTROL_CATALOG },
 ];
@@ -454,7 +497,13 @@ const reportAccuracyById: Record<string,{level:AccuracyLevel;reason:string}> = {
   fertilizer_npk: { level:"低概率", reason:"2025 自然年 HS 310520 价值与 2025-26 财年 NPK/NPKS 数量口径分化，需要 HS8、配方和企业采购数据解释。" },
   graphite: { level:"推测", reason:"HS4 无法识别纯度、粒径和形态等受控参数，需以产品规格与许可证材料复核。" },
   rareearth: { level:"推测", reason:"宽税号无法区分具体元素、化合物形态与最终用途，当前仅作风险假设。" },
-  tunnel: { level:"推测", reason:"HS 8430 是盾构及隧道设备的代理口径，不能替代设备型号和项目级业务数据。" },
+  tunnel: { level:"高概率", reason:"项目直运由制造商官方资料支持，税号合并值明确限定为筛查池；第三国路径未作事实认定。" },
+  tunnel_843031: { level:"低概率", reason:"来源占比可复核，但税号混入采煤机和截岩机，新加坡线索也缺少同一设备闭环。" },
+  tunnel_843039: { level:"推测", reason:"低金额、高件数和不完整的上游来源使该税号难以代表完整盾构机。" },
+  earthmoving: { level:"高概率", reason:"三个严格整车税号的合并值与车型分化均可复核，结论同时保留镜像差异和转口证据边界。" },
+  earthmoving_dumptruck: { level:"高概率", reason:"中国份额上升与印尼贸易重叠有年度数据支持，但结论未把印尼路径表述为已证实转口。" },
+  earthmoving_crane: { level:"低概率", reason:"中国主导方向明确，但印度进口与中国出口镜像规模差异巨大，精确金额和趋势须逐票复核。" },
+  earthmoving_mixer: { level:"高概率", reason:"2024—2025 整车金额和数量均显示市场规模小、中国份额较低；企业级依赖另行保留。" },
 };
 
 const defaultReportAccuracy = { level:"高概率", reason:"结论主要基于可复核的 HS4 进口规模、来源占比和审慎的证据边界表述。" } as const;
@@ -543,8 +592,9 @@ export default function Home() {
     setSelected(item);
     setSelectedSubitem(item.id);
   };
-  const selectedRecord = selected?.id === "fertilizer"
-    ? [selected,...fertilizerSubitems].find(item=>item.id===selectedSubitem)??selected
+  const selectedChildren = selected ? commoditySubitemsByParent[selected.id]??[] : [];
+  const selectedRecord = selected && selectedChildren.length
+    ? [selected,...selectedChildren].find(item=>item.id===selectedSubitem)??selected
     : selected;
   const selectedReport = selectedRecord ? commodityReports[selectedRecord.id] : null;
   const selectedMonthly = selectedRecord ? monthlyTradeById[selectedRecord.id]??[] : [];
@@ -582,19 +632,19 @@ export default function Home() {
     <section className="definition-strip" id="method"><span>01</span><div><strong>“依赖”指什么？</strong><p>同一时期、同一 HS 编码下，印度自中国进口额 ÷ 印度全球进口额。它衡量的是<strong>进口来源依赖</strong>，不等于印度国内消费或生产的总体依赖。</p></div><a href="#sources">查看完整口径 ↘</a></section>
 
     <section className="section matrix-section" id="matrix">
-      <div className="section-heading"><div><p>DEPENDENCY MATRIX / 2025</p><h2>重点商品依赖矩阵</h2></div><p>基于 2025 完整自然年；主体使用 HS4，化肥采用 HS31 总项并下钻至四个 HS6 子项。点击任一商品查看专项报告。</p></div>
+      <div className="section-heading"><div><p>DEPENDENCY MATRIX / 2025</p><h2>重点商品依赖矩阵</h2></div><p>基于 2025 完整自然年；主体使用 HS4，化肥采用 HS31，盾构机与工程车采用严格 HS6 筛查组合，并可下钻至各子项。点击任一商品查看专项报告。</p></div>
       <div className="filter-shell">
         <div className="category-tabs" role="tablist" aria-label="行业筛选">{categories.map(item=><button key={item} role="tab" aria-selected={category===item} className={category===item?"active":""} onClick={()=>setCategory(item)}>{item}</button>)}</div>
-        <div className="filters"><label className="search"><span>搜索商品 / 英文 / HS</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="例如：盾构、battery、8430"/></label><label><span>最低对华占比 <b>{minShare}%</b></span><input type="range" min="0" max="90" step="5" value={minShare} onChange={e=>setMinShare(Number(e.target.value))}/></label><label><span>最低自华进口额 <b>{minValue===0?"不限":formatB(minValue)}</b></span><input type="range" min="0" max="5" step="0.25" value={minValue} onChange={e=>setMinValue(Number(e.target.value))}/></label><button className="reset" onClick={reset}>重置筛选</button></div>
+        <div className="filters"><label className="search"><span>搜索商品 / 英文 / HS</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="例如：盾构、起重机、870510"/></label><label><span>最低对华占比 <b>{minShare}%</b></span><input type="range" min="0" max="90" step="5" value={minShare} onChange={e=>setMinShare(Number(e.target.value))}/></label><label><span>最低自华进口额 <b>{minValue===0?"不限":formatB(minValue)}</b></span><input type="range" min="0" max="5" step="0.25" value={minValue} onChange={e=>setMinValue(Number(e.target.value))}/></label><button className="reset" onClick={reset}>重置筛选</button></div>
       </div>
       <div className="matrix-meta" aria-live="polite"><span>显示 {filtered.length} / {commodities.length} 个商品组 · 按依赖度排序</span><a href={COMTRADE} target="_blank" rel="noreferrer">UN Comtrade · 2025 · 访问 {SNAPSHOT_DATE} ↗</a></div>
       <div className="commodity-table"><div className="table-head"><span>商品 / HS</span><span>印度自中国进口</span><span>印度全球进口</span><span>对华来源占比</span><span>判读</span></div>{filtered.map(item=><button className="commodity-row" key={item.id} onClick={()=>openCommodity(item)} aria-label={`查看 ${item.name} 详情`}><span className="commodity-name"><b>{item.name}</b><small>{item.english}</small><code>HS {item.hs}{item.proxy?" · 代理编码":""}</code></span><span className="value-cell"><b>{formatB(item.completeYear.china)}</b><small>2025 · CIF</small></span><span className="value-cell"><b>{formatB(item.completeYear.world)}</b><small>2025 · 全球</small></span><span className="share-cell"><b>{item.completeYear.share.toFixed(1)}%</b><i><em style={{width:`${item.completeYear.share}%`}}/></i></span><span className="tag-cell">{item.controlled&&<i className="risk">管制筛查</i>}{item.proxy&&<i>代理口径</i>}{item.children&&<i>{item.children.length} 个子项</i>}<small>详情 ↗</small></span></button>)}{filtered.length===0&&<div className="empty-state"><strong>没有符合条件的商品</strong><p>降低阈值或清除搜索词后再试。</p><button onClick={reset}>恢复全部</button></div>}</div>
-      <p className="data-note">单位：十亿美元，现价美元，进口通常按 CIF 计。多数商品为 HS4；化肥总项为 HS31，详情子项为 HS6。任何产业或管制判断仍应继续下钻。2026 年月度库已发布至 5 月，但本矩阵不混入未完成的自然年。</p>
+      <p className="data-note">单位：十亿美元，现价美元，进口通常按 CIF 计。多数商品为 HS4；化肥总项为 HS31；盾构机、工程车及其详情使用 HS6 单项或合并筛查池。筛查池不能等同于具体整机成交额或台数。2026 年月度库已发布至 5 月，但本矩阵不混入未完成的自然年。</p>
     </section>
 
     <section className="pulse-ribbon" aria-label="最新月度数据"><div><span>MONTHLY DATA UPDATE</span><strong>2026.05</strong></div><p>印度 TradeStat 月度库已更新至 2026 年 5 月；2026 年 4 月起部分 ITC HS 编码被撤销或重新分配。本版保留 2025 完整年作为可比矩阵，月度细项通过下次审核后再进入快照。</p><a href={TRADESTAT} target="_blank" rel="noreferrer">打开官方月度库 ↗</a></section>
 
-    <section className="section spotlight"><div className="section-heading"><div><p>EQUIPMENT FOCUS</p><h2>工程设备专题</h2></div><p>把整机、土方车辆与维保零件分开阅读，避免用一个宽泛税号替代具体设备判断。</p></div><div className="spotlight-grid">{["tunnel","earthmoving","machineparts"].map((id,index)=>{const item=commodities.find(x=>x.id===id)!;return <button className="spotlight-card" key={id} onClick={()=>openCommodity(item)}><span className="card-index">0{index+1} / HS {item.hs}</span><div className={`equipment-visual v${index+1}`} aria-hidden="true"><i/><i/><i/></div><p>{item.english}</p><h3>{item.name}</h3><strong className="big-share">{item.completeYear.share.toFixed(1)}<small>%</small></strong><span className="card-link">查看证据卡片 ↗</span></button>})}</div></section>
+    <section className="section spotlight"><div className="section-heading"><div><p>EQUIPMENT FOCUS</p><h2>工程设备专题</h2></div><p>盾构机按项目证据与两个 HS6 筛查池阅读，工程车按三个严格整车子项阅读，并与维保零件分开判断。</p></div><div className="spotlight-grid">{["tunnel","earthmoving","machineparts"].map((id,index)=>{const item=commodities.find(x=>x.id===id)!;return <button className="spotlight-card" key={id} onClick={()=>openCommodity(item)}><span className="card-index">0{index+1} / HS {item.hs}</span><div className={`equipment-visual v${index+1}`} aria-hidden="true"><i/><i/><i/></div><p>{item.english}</p><h3>{item.name}</h3><strong className="big-share">{item.completeYear.share.toFixed(1)}<small>%</small></strong><span className="card-link">查看证据卡片 ↗</span></button>})}</div></section>
 
     <section className="section route-section" id="routes">
       <div className="section-heading inverse"><div><p>ROUTE SIGNALS / SCREENING ONLY</p><h2>可能的第三国路径信号</h2></div><p>同一 HS 组中“中国→第三国”与“第三国→印度”同步上升，并同时展示“中国→印度”变化。仅用于筛查，不认定实际转口或违法。</p></div>
@@ -606,7 +656,7 @@ export default function Home() {
 
     <section className="section" id="policy"><div className="section-heading"><div><p>CONTROL TIMELINE</p><h2>政策与管制时间线</h2></div><p>HS 编码只是筛查入口。是否受控取决于管制编码、技术参数、最终用户、最终用途以及查询时有效的政策。</p></div><div className="timeline">{policies.map((item,index)=><a className="timeline-item" href={item.url} target="_blank" rel="noreferrer" key={item.date}><span>{item.date}</span><i>{String(index+1).padStart(2,"0")}</i><div><h3>{item.title} ↗</h3><p>{item.body}</p></div></a>)}</div><div className="control-ledger"><h3>可观察管制筛查表</h3>{controls.map(item=><a href={item.source} target="_blank" rel="noreferrer" key={item.referenceHs}><span>{item.referenceHs}</span><strong>{item.item}</strong><p>{item.parameters}</p><em>{item.status} ↗</em></a>)}</div></section>
 
-    <section className="section sources-section" id="sources"><div className="section-heading"><div><p>SOURCE CENTER</p><h2>来源、口径与可复核性</h2></div><p>每组数据保留来源发布日期、访问日期、HS 版本、完整年度/月度口径及限制说明。</p></div><div className="source-grid">{sources.map(source=><a className="source-card" href={source.url} target="_blank" rel="noreferrer" key={source.tag}><span>{source.tag}</span><div><h3>{source.title} ↗</h3><p>{source.detail}</p></div><small>{source.period} · 访问 {SNAPSHOT_DATE}</small></a>)}</div><div className="method-grid"><div><span>M01</span><h3>计算</h3><p>同一时期、同一 HS 编码：印度自中国进口额 ÷ 印度全球进口额。</p></div><div><span>M02</span><h3>时间</h3><p>2025 自然年作为完整基准；2026 年 1—5 月只作为最新月度数据参考，不与完整年混算。</p></div><div><span>M03</span><h3>编码</h3><p>矩阵主体使用 HS4；化肥总览使用 HS31，四个子项使用 HS6。2026 ITC HS 调整需显式对照。</p></div><div><span>M04</span><h3>限制</h3><p>镜像贸易、估算值、CIF/FOB 差异和宽税号都会影响判读。本工具不构成法律意见。</p></div></div></section>
+    <section className="section sources-section" id="sources"><div className="section-heading"><div><p>SOURCE CENTER</p><h2>来源、口径与可复核性</h2></div><p>每组数据保留来源发布日期、访问日期、HS 版本、完整年度/月度口径及限制说明。</p></div><div className="source-grid">{sources.map(source=><a className="source-card" href={source.url} target="_blank" rel="noreferrer" key={source.tag}><span>{source.tag}</span><div><h3>{source.title} ↗</h3><p>{source.detail}</p></div><small>{source.period} · 访问 {SNAPSHOT_DATE}</small></a>)}</div><div className="method-grid"><div><span>M01</span><h3>计算</h3><p>同一时期、同一 HS 编码：印度自中国进口额 ÷ 印度全球进口额；合并项先求金额合计再计算份额。</p></div><div><span>M02</span><h3>时间</h3><p>2025 自然年作为完整基准；2026 年 1—5 月只作为最新月度数据参考，不与完整年混算。</p></div><div><span>M03</span><h3>编码</h3><p>矩阵主体使用 HS4；化肥使用 HS31/HS6；盾构机与工程车使用严格 HS6 单项或合并筛查池。2026 ITC HS 调整需显式对照。</p></div><div><span>M04</span><h3>限制</h3><p>盾构机税号并非整机专属；镜像贸易、CIF/FOB、数量单位和分类差异也会影响判读。本工具不构成法律意见。</p></div></div></section>
 
     <footer><div><strong>中印供应链依赖图谱</strong><p>公开研究工具 · 静态数据快照 · 无需登录</p></div><div><span>快照生成</span><b>{SNAPSHOT_DATE}</b></div><a href="#top">回到顶部 ↑</a></footer>
 
@@ -616,8 +666,8 @@ export default function Home() {
         <p className="eyebrow">COMMODITY REPORT / {REPORT_DATE}</p>
         <h2 id="drawer-title">{selectedRecord.name}</h2>
         <p className="drawer-english">{selectedRecord.english}</p>
-        {selected.id==="fertilizer"&&<div className="fertilizer-subnav" role="tablist" aria-label="化肥子项">
-          {[selected,...fertilizerSubitems].map((item,index)=><button key={item.id} role="tab" aria-selected={selectedRecord.id===item.id} className={selectedRecord.id===item.id?"active":""} onClick={()=>setSelectedSubitem(item.id)}><small>{index===0?"总览":`HS ${item.hs}`}</small><strong>{item.name}</strong></button>)}
+        {selectedChildren.length>0&&<div className="commodity-subnav" role="tablist" aria-label={`${selected.name}子项`}>
+          {[selected,...selectedChildren].map((item,index)=><button key={item.id} role="tab" aria-selected={selectedRecord.id===item.id} className={selectedRecord.id===item.id?"active":""} onClick={()=>setSelectedSubitem(item.id)}><small>{index===0?"总览":`HS ${item.hs}`}</small><strong>{item.name}</strong></button>)}
         </div>}
         <div className="drawer-tags"><code>HS {selectedRecord.hs}</code><span>{selectedRecord.category}</span>{selectedRecord.proxy&&<span>代理编码</span>}{selectedRecord.controlled&&<span className="risk">管制筛查</span>}</div>
         <div className="report-status"><span className={`evidence-level evidence-${selectedReport.evidence.replace("中等偏低","medium-low").replace("中等","medium").replace("低","low")}`}>证据等级 · {selectedReport.evidence}</span><span>{selectedReport.status}</span></div>
@@ -653,7 +703,7 @@ export default function Home() {
         </section>
 
         <section><h3>商品定义与口径</h3><p>{selectedRecord.definition}</p></section>
-        <section><div className="drawer-section-title"><h3>月度数据与趋势</h3><span>2024-12—2026-06 · {selectedRecord.id==="fertilizer"?"HS31":selectedRecord.id.startsWith("fertilizer_")?"HS6":"HS4"}</span></div><MonthlyTrend points={selectedMonthly}/></section>
+        <section><div className="drawer-section-title"><h3>月度数据与趋势</h3><span>2024-12—2026-06 · {selectedRecord.id==="fertilizer"?"HS31":selectedRecord.id.startsWith("fertilizer_")||selectedRecord.id.startsWith("tunnel_")||selectedRecord.id.startsWith("earthmoving_")?"HS6":selectedRecord.children?.length?"HS6 合并":"HS4"}</span></div><MonthlyTrend points={selectedMonthly}/></section>
         <section><div className="drawer-section-title"><h3>五年趋势</h3><span>2021—2025 · 对华来源占比</span></div>{selectedRecord.trend?<div className="trend-chart">{selectedRecord.trend.map(point=><div className="trend-year" key={point.year}><span>{point.share.toFixed(1)}%</span><div><i style={{height:`${Math.max(6,point.share)}%`}}/></div><small>{point.year}</small></div>)}</div>:<div className="trend-unavailable"><strong>未跨期合并</strong><p>该子项保留完整年月度趋势，但未在本次更新中跨期合并年度编码。</p></div>}</section>
         <section><h3>主要替代供应国</h3><div className="alternatives">{selectedRecord.alternatives.map(country=><span key={country}>{country}</span>)}</div><p>按可比双边数据识别，表示其他来源，不代表短期内具备等量替代能力，也不自动构成中转国。</p></section>
         <section className="report-references"><h3>证据来源</h3><ul>{selectedReport.references.map(reference=><li key={reference}>{reference}</li>)}</ul><p>报告研究日期：{REPORT_DATE}。路径证据用于风险筛查，不构成违法转口、规避关税或规避管制的认定。</p></section>
