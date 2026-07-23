@@ -29,6 +29,7 @@ type CommodityReport = {
 export type CommodityRecord = {
   id: string;
   hs: string;
+  hs8?: string;
   name: string;
   english: string;
   category: Exclude<Category, "全部">;
@@ -80,6 +81,10 @@ const CONTROL_CATALOG = "https://exportcontrol.mofcom.gov.cn/article/hgfw/lywxcx
 const categories: Category[] = ["全部", "原材料", "医药化工", "电子与电力", "工业机械", "工程设备", "车辆零部件"];
 const pulse = { period: "2026-01—05", china: null, world: null, share: null, completeness: "已发布，待 HS4 复核", source: "India TradeStat" } as const;
 const annual = (china: number, world: number) => ({ period: "2025", china, world, share: china / world * 100, source: "UN Comtrade" } as const);
+const toHs8 = (code: string) => code.split("/").map(part => part.padEnd(8, "0")).join("/");
+const hs8Of = (item: Pick<CommodityRecord, "hs" | "hs8">) => item.hs8 ?? toHs8(item.hs);
+const statLevelOf = (item: CommodityRecord) => item.id === "fertilizer" ? "统计口径 HS31" : item.children ? "统计口径 HS6 合并" : item.hs.length <= 4 ? "统计口径 HS4" : item.hs.includes("/") ? "统计口径 HS6 合并" : "统计口径 HS6";
+const reportHref = (id: string) => `${import.meta.env.BASE_URL}reports/${id}.docx`;
 
 const commodities: CommodityRecord[] = [
   { id: "ic", hs: "8542", name: "集成电路", english: "Electronic integrated circuits", category: "电子与电力", completeYear: annual(11.7102, 28.6165), latestPulse: pulse, alternatives: ["中国台湾", "韩国", "日本", "马来西亚"], definition: "处理器、存储器、放大器等宽口径品类；具体用途需下钻至 HS6/8。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE, trend: [{year:"2021",china:4.53,world:12.39,share:36.5},{year:"2022",china:5.06,world:16.12,share:31.4},{year:"2023",china:10.06,world:19.22,share:52.4},{year:"2024",china:10.54,world:23.45,share:45.0},{year:"2025",china:11.7102,world:28.6165,share:40.9}] },
@@ -122,6 +127,8 @@ const commoditySubitemsByParent: Record<string,CommodityRecord[]> = {
   tunnel: tunnelSubitems,
   earthmoving: earthmovingSubitems,
 };
+const allCommodityRecords = [...commodities, ...fertilizerSubitems, ...tunnelSubitems, ...earthmovingSubitems];
+const fertilizerFocusIds = ["fertilizer", "fertilizer_urea", "fertilizer_dap", "fertilizer_mop", "fertilizer_npk"];
 
 const commodityReports: Record<string, CommodityReport> = {
   ic: {
@@ -581,7 +588,7 @@ export default function Home() {
 
   const filtered = useMemo(() => commodities.filter(item => {
     const q = search.trim().toLowerCase();
-    return (category === "全部" || item.category === category) && (!q || `${item.name} ${item.english} ${item.hs} ${item.searchTerms??""}`.toLowerCase().includes(q)) && item.completeYear.share >= minShare && item.completeYear.china >= minValue;
+    return (category === "全部" || item.category === category) && (!q || `${item.name} ${item.english} ${item.hs} ${hs8Of(item)} ${item.searchTerms??""}`.toLowerCase().includes(q)) && item.completeYear.share >= minShare && item.completeYear.china >= minValue;
   }).sort((a,b)=>b.completeYear.share-a.completeYear.share),[category,search,minShare,minValue]);
 
   const activeRoutes = routes.filter(route => route.cnToHub[1] >= routeValue && route.hubToIndia[1] >= routeValue && growth(route.cnToHub[1],route.cnToHub[0]) >= routeGrowth && growth(route.hubToIndia[1],route.hubToIndia[0]) >= routeGrowth);
@@ -594,6 +601,19 @@ export default function Home() {
     setSelected(item);
     setSelectedSubitem(item.id);
   };
+  const openCommodityById = (id:string) => {
+    const parent = commodities.find(item=>item.id===id);
+    if (parent) {
+      openCommodity(parent);
+      return;
+    }
+    const parentEntry = Object.entries(commoditySubitemsByParent).find(([,items])=>items.some(item=>item.id===id));
+    if (!parentEntry) return;
+    const parentRecord = commodities.find(item=>item.id===parentEntry[0]);
+    if (!parentRecord) return;
+    setSelected(parentRecord);
+    setSelectedSubitem(id);
+  };
   const selectedChildren = selected ? commoditySubitemsByParent[selected.id]??[] : [];
   const selectedRecord = selected && selectedChildren.length
     ? [selected,...selectedChildren].find(item=>item.id===selectedSubitem)??selected
@@ -605,7 +625,7 @@ export default function Home() {
   return <main>
     <header className="topbar">
       <a className="brand" href="#top" aria-label="返回首页"><span className="brand-mark">依</span><span>中印供应链依赖图谱<small>INDIA × CHINA SUPPLY ATLAS</small></span></a>
-      <nav aria-label="主要导航"><a href="#matrix">依赖矩阵</a><a href="#routes">路径信号</a><a href="#policy">政策时间线</a><a href="#sources">来源中心</a></nav>
+      <nav aria-label="主要导航"><a href="#matrix">依赖矩阵</a><a href="#fertilizer-focus">化肥专题</a><a href="#routes">路径信号</a><a href="#sources">来源中心</a><a href="#reports">报告下载</a></nav>
       <span className="snapshot"><i/> PUBLIC · 快照 {SNAPSHOT_DATE}</span>
     </header>
 
@@ -620,11 +640,11 @@ export default function Home() {
       <div className="hero-panel">
         <div className="period-toggle" role="group" aria-label="数据时期"><button className={period==="annual"?"active":""} onClick={()=>setPeriod("annual")}>2025 完整年</button><button className={period==="pulse"?"active":""} onClick={()=>setPeriod("pulse")}>2026 最新数据</button></div>
         {period === "annual" ? <>
-          <div className="hero-metric"><span>{commodities.length} 个重点商品组 · 加权对华来源占比</span><strong>{weightedShare.toFixed(1)}<small>%</small></strong><p>中国进口额之和 ÷ 全球进口额之和；化肥为 HS31 总项，其余主体为 HS4。不是印度全经济总体依赖率。</p></div>
+          <div className="hero-metric"><span>{commodities.length} 个重点商品组 · 加权对华来源占比</span><strong>{weightedShare.toFixed(1)}<small>%</small></strong><p>中国进口额之和 ÷ 全球进口额之和；页面展示 HS2022 8 位筛查码，统计金额仍按可复核的 HS31、HS4 或 HS6 合并口径计算。不是印度全经济总体依赖率。</p></div>
           <div className="metric-quads"><div><span>自中国进口</span><strong>{formatB(chinaTotal)}</strong></div><div><span>样本全球进口</span><strong>{formatB(worldTotal)}</strong></div><div><span>占比 ≥ 50%</span><strong>{highCount}<small> 组</small></strong></div><div><span>最高集中度</span><strong>87.2%</strong></div></div>
           <a className="panel-source" href={COMTRADE} target="_blank" rel="noreferrer"><span>SOURCE 01</span> UN Comtrade · 2025 · {CURRENT_HS_VERSION}（H6）↗</a>
         </> : <>
-          <div className="hero-metric pulse"><span>印度对华进口 · FY2025–26</span><strong>$131.63<small>B</small></strong><p>完整财年官方总量；与 2025 自然年 HS4 矩阵分开展示。</p></div>
+          <div className="hero-metric pulse"><span>印度对华进口 · FY2025–26</span><strong>$131.63<small>B</small></strong><p>完整财年官方总量；与 2025 自然年商品矩阵分开展示。</p></div>
           <div className="metric-quads"><div><span>对华出口</span><strong>$19.47B</strong></div><div><span>进口同比</span><strong>+16.03%</strong></div><div><span>2026 年 4 月进口同比</span><strong>+20.85%</strong></div><div><span>月度库可用至</span><strong>2026.05</strong></div></div>
           <a className="panel-source" href={TIA} target="_blank" rel="noreferrer"><span>SOURCE 02</span> India TIA / DGCI&S · 访问 {SNAPSHOT_DATE} ↗</a>
         </>}
@@ -634,19 +654,25 @@ export default function Home() {
     <section className="definition-strip" id="method"><span>01</span><div><strong>“依赖”指什么？</strong><p>同一时期、同一 HS 编码下，印度自中国进口额 ÷ 印度全球进口额。它衡量的是<strong>进口来源依赖</strong>，不等于印度国内消费或生产的总体依赖。</p></div><a href="#sources">查看完整口径 ↘</a></section>
 
     <section className="section matrix-section" id="matrix">
-      <div className="section-heading"><div><p>DEPENDENCY MATRIX / 2025</p><h2>重点商品依赖矩阵</h2></div><p>基于 2025 完整自然年并统一采用 HS 2022（UN Comtrade H6）；主体使用 HS4，化肥采用 HS31，盾构机与工程车采用严格 HS6 筛查组合，并可下钻至各子项。</p></div>
+      <div className="section-heading"><div><p>DEPENDENCY MATRIX / 2025</p><h2>重点商品依赖矩阵</h2></div><p>基于 2025 完整自然年并统一采用 HS 2022（UN Comtrade H6）；商品编码展示为 8 位筛查码，统计金额按可复核的 HS31、HS4 或 HS6 合并口径计算，并可下钻至各子项。</p></div>
       <div className="filter-shell">
         <div className="category-tabs" role="tablist" aria-label="行业筛选">{categories.map(item=><button key={item} role="tab" aria-selected={category===item} className={category===item?"active":""} onClick={()=>setCategory(item)}>{item}</button>)}</div>
         <div className="filters"><label className="search"><span>搜索商品 / 英文 / HS</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="例如：盾构、起重机、870510"/></label><label><span>最低对华占比 <b>{minShare}%</b></span><input type="range" min="0" max="90" step="5" value={minShare} onChange={e=>setMinShare(Number(e.target.value))}/></label><label><span>最低自华进口额 <b>{minValue===0?"不限":formatB(minValue)}</b></span><input type="range" min="0" max="5" step="0.25" value={minValue} onChange={e=>setMinValue(Number(e.target.value))}/></label><button className="reset" onClick={reset}>重置筛选</button></div>
       </div>
       <div className="matrix-meta" aria-live="polite"><span>显示 {filtered.length} / {commodities.length} 个商品组 · 按依赖度排序</span><a href={COMTRADE} target="_blank" rel="noreferrer">UN Comtrade · 2025 · 访问 {SNAPSHOT_DATE} ↗</a></div>
-      <div className="commodity-table"><div className="table-head"><span>商品 / HS</span><span>印度自中国进口</span><span>印度全球进口</span><span>对华来源占比</span><span>判读</span></div>{filtered.map(item=><button className="commodity-row" key={item.id} onClick={()=>openCommodity(item)} aria-label={`查看 ${item.name} 详情`}><span className="commodity-name"><b>{item.name}</b><small>{item.english}</small><code>{CURRENT_HS_VERSION} · {item.hs}{item.proxy?" · 代理编码":""}</code></span><span className="value-cell"><b>{formatB(item.completeYear.china)}</b><small>2025 · CIF</small></span><span className="value-cell"><b>{formatB(item.completeYear.world)}</b><small>2025 · 全球</small></span><span className="share-cell"><b>{item.completeYear.share.toFixed(1)}%</b><i><em style={{width:`${item.completeYear.share}%`}}/></i></span><span className="tag-cell">{item.controlled&&<i className="risk">管制筛查</i>}{item.proxy&&<i>代理口径</i>}{item.children&&<i>{item.children.length} 个子项</i>}<small>详情 ↗</small></span></button>)}{filtered.length===0&&<div className="empty-state"><strong>没有符合条件的商品</strong><p>降低阈值或清除搜索词后再试。</p><button onClick={reset}>恢复全部</button></div>}</div>
-      <p className="data-note">分类版本：HS 2022（UN Comtrade H6）。单位：十亿美元，现价美元，进口通常按 CIF 计。多数商品为 HS4；化肥总项为 HS31；盾构机、工程车及其详情使用 HS6 单项或合并筛查池。筛查池不能等同于具体整机成交额或台数。</p>
+      <div className="commodity-table"><div className="table-head"><span>商品 / HS8</span><span>印度自中国进口</span><span>印度全球进口</span><span>对华来源占比</span><span>判读</span></div>{filtered.map(item=><button className="commodity-row" key={item.id} onClick={()=>openCommodity(item)} aria-label={`查看 ${item.name} 详情`}><span className="commodity-name"><b>{item.name}</b><small>{item.english}</small><code>{CURRENT_HS_VERSION} · HS8 {hs8Of(item)}{item.proxy?" · 代理编码":""}</code><em>{statLevelOf(item)}</em></span><span className="value-cell"><b>{formatB(item.completeYear.china)}</b><small>2025 · CIF</small></span><span className="value-cell"><b>{formatB(item.completeYear.world)}</b><small>2025 · 全球</small></span><span className="share-cell"><b>{item.completeYear.share.toFixed(1)}%</b><i><em style={{width:`${item.completeYear.share}%`}}/></i></span><span className="tag-cell">{item.controlled&&<i className="risk">管制筛查</i>}{item.proxy&&<i>代理口径</i>}{item.children&&<i>{item.children.length} 个子项</i>}<small>详情 ↗</small></span></button>)}{filtered.length===0&&<div className="empty-state"><strong>没有符合条件的商品</strong><p>降低阈值或清除搜索词后再试。</p><button onClick={reset}>恢复全部</button></div>}</div>
+      <p className="data-note">分类版本：HS 2022（UN Comtrade H6）。页面展示 8 位筛查码：HS4/HS6 项以末位补零方式映射为 8 位，合并项以多个 8 位码并列展示。单位：十亿美元，现价美元，进口通常按 CIF 计。统计金额仍以数据源可复核的 HS31、HS4、HS6 单项或合并筛查池计算；筛查池不能等同于具体整机成交额或台数。</p>
     </section>
 
     <section className="pulse-ribbon" aria-label="最新月度数据"><div><span>MONTHLY DATA UPDATE</span><strong>2026.05</strong></div><p>印度 TradeStat 月度库已更新至 2026 年 5 月；2026 年 4 月起部分 ITC HS 编码被撤销或重新分配。本版保留 2025 完整年作为可比矩阵，月度细项通过下次审核后再进入快照。</p><a href={TRADESTAT} target="_blank" rel="noreferrer">打开官方月度库 ↗</a></section>
 
-    <section className="section spotlight"><div className="section-heading"><div><p>EQUIPMENT FOCUS</p><h2>工程设备专题</h2></div><p>盾构机按项目证据与两个 HS6 筛查池阅读，工程车按三个严格整车子项阅读，并与维保零件分开判断。</p></div><div className="spotlight-grid">{["tunnel","earthmoving","machineparts"].map((id,index)=>{const item=commodities.find(x=>x.id===id)!;return <button className="spotlight-card" key={id} onClick={()=>openCommodity(item)}><span className="card-index">0{index+1} / {CURRENT_HS_VERSION} · {item.hs}</span><div className={`equipment-visual v${index+1}`} aria-hidden="true"><i/><i/><i/></div><p>{item.english}</p><h3>{item.name}</h3><strong className="big-share">{item.completeYear.share.toFixed(1)}<small>%</small></strong><span className="card-link">查看证据卡片 ↗</span></button>})}</div></section>
+    <section className="section fertilizer-focus" id="fertilizer-focus">
+      <div className="section-heading"><div><p>FERTILIZER FOCUS</p><h2>化肥专题</h2></div><p>将 HS31 总项与尿素、DAP、MOP、NPK 四个子项分开判读：总项观察整体暴露，子项用于核验具体采购、替代来源和第三国装运线索。</p></div>
+      <div className="fertilizer-grid">{fertilizerFocusIds.map((id,index)=>{const item = allCommodityRecords.find(record=>record.id===id)!;const accuracy = reportAccuracyById[id]??defaultReportAccuracy;return <article className="fertilizer-card" key={id}><button type="button" onClick={()=>openCommodityById(id)}><span>{String(index+1).padStart(2,"0")} / HS8 {hs8Of(item)}</span><h3>{item.name}</h3><p>{item.english}</p><strong>{item.completeYear.share.toFixed(1)}<small>%</small></strong><em>{accuracy.level}</em></button><a href={reportHref(id)} download>下载 Word 报告 ↗</a></article>})}</div>
+      <p className="data-note">化肥专题参考印度化肥部国别—品类附件、DGCI&S 直接/间接装运样本与 UN Comtrade 2025 HS2022 数据。财年数量、自然年金额和 HS8 企业单证应分开校验。</p>
+    </section>
+
+    <section className="section spotlight"><div className="section-heading"><div><p>EQUIPMENT FOCUS</p><h2>工程设备专题</h2></div><p>盾构机按项目证据与两个 HS6 筛查池阅读，工程车按三个严格整车子项阅读，并与维保零件分开判断。</p></div><div className="spotlight-grid">{["tunnel","earthmoving","machineparts"].map((id,index)=>{const item=commodities.find(x=>x.id===id)!;return <button className="spotlight-card" key={id} onClick={()=>openCommodity(item)}><span className="card-index">0{index+1} / HS8 {hs8Of(item)}</span><div className={`equipment-visual v${index+1}`} aria-hidden="true"><i/><i/><i/></div><p>{item.english}</p><h3>{item.name}</h3><strong className="big-share">{item.completeYear.share.toFixed(1)}<small>%</small></strong><span className="card-link">查看证据卡片 ↗</span></button>})}</div></section>
 
     <section className="section route-section" id="routes">
       <div className="section-heading inverse"><div><p>ROUTE SIGNALS / SCREENING ONLY</p><h2>可能的第三国路径信号</h2></div><p>同一 HS 组中“中国→第三国”与“第三国→印度”同步上升，并同时展示“中国→印度”变化。仅用于筛查，不认定实际转口或违法。</p></div>
@@ -658,7 +684,16 @@ export default function Home() {
 
     <section className="section" id="policy"><div className="section-heading"><div><p>CONTROL TIMELINE</p><h2>政策与管制时间线</h2></div><p>HS 编码只是筛查入口。是否受控取决于管制编码、技术参数、最终用户、最终用途以及查询时有效的政策。</p></div><div className="timeline">{policies.map((item,index)=><a className="timeline-item" href={item.url} target="_blank" rel="noreferrer" key={item.date}><span>{item.date}</span><i>{String(index+1).padStart(2,"0")}</i><div><h3>{item.title} ↗</h3><p>{item.body}</p></div></a>)}</div><div className="control-ledger"><h3>可观察管制筛查表</h3>{controls.map(item=><a href={item.source} target="_blank" rel="noreferrer" key={item.referenceHs}><span>{item.referenceHs}</span><strong>{item.item}</strong><p>{item.parameters}</p><em>{item.status} ↗</em></a>)}</div></section>
 
-    <section className="section sources-section" id="sources"><div className="section-heading"><div><p>SOURCE CENTER</p><h2>来源、口径与可复核性</h2></div><p>每组数据保留来源发布日期、访问日期、HS 版本、完整年度/月度口径及限制说明。</p></div><div className="source-grid">{sources.map(source=><a className="source-card" href={source.url} target="_blank" rel="noreferrer" key={source.tag}><span>{source.tag}</span><div><h3>{source.title} ↗</h3><p>{source.detail}</p></div><small>{source.period} · 访问 {SNAPSHOT_DATE}</small></a>)}</div><div className="method-grid"><div><span>M01</span><h3>计算</h3><p>同一时期、同一 HS 编码：印度自中国进口额 ÷ 印度全球进口额；合并项先求金额合计再计算份额。</p></div><div><span>M02</span><h3>时间</h3><p>2025 自然年作为完整基准；2026 年 1—5 月只作为最新月度数据参考，不与完整年混算。</p></div><div><span>M03</span><h3>编码版本</h3><p>当前矩阵和月度序列使用 HS 2022（H6）；跨越修订点的趋势标注 HS 2017→2022 对照，编码拆分或合并不直接解释为贸易变化。</p></div><div><span>M04</span><h3>限制</h3><p>盾构机税号并非整机专属；镜像贸易、CIF/FOB、数量单位和分类差异也会影响判读。本工具不构成法律意见。</p></div></div></section>
+    <section className="section sources-section" id="sources"><div className="section-heading"><div><p>SOURCE CENTER</p><h2>来源、口径与可复核性</h2></div><p>每组数据保留来源发布日期、访问日期、HS 版本、完整年度/月度口径及限制说明。</p></div><div className="source-grid">{sources.map(source=><a className="source-card" href={source.url} target="_blank" rel="noreferrer" key={source.tag}><span>{source.tag}</span><div><h3>{source.title} ↗</h3><p>{source.detail}</p></div><small>{source.period} · 访问 {SNAPSHOT_DATE}</small></a>)}</div><div className="method-grid"><div><span>M01</span><h3>计算</h3><p>同一时期、同一 HS 编码：印度自中国进口额 ÷ 印度全球进口额；合并项先求金额合计再计算份额。</p></div><div><span>M02</span><h3>时间</h3><p>2025 自然年作为完整基准；2026 年 1—5 月只作为最新月度数据参考，不与完整年混算。</p></div><div><span>M03</span><h3>编码版本</h3><p>当前矩阵和月度序列使用 HS 2022（H6）；页面展示 8 位筛查码，统计口径仍按来源可复核层级标注。跨越修订点的趋势标注 HS 2017→2022 对照。</p></div><div><span>M04</span><h3>限制</h3><p>8 位码用于业务单证对齐，不表示公开统计已全部下钻至 HS8；镜像贸易、CIF/FOB、数量单位和分类差异也会影响判读。本工具不构成法律意见。</p></div></div></section>
+
+    <section className="section report-center" id="reports">
+      <div className="section-heading"><div><p>WORD REPORTS</p><h2>分析报告下载</h2></div><p>总报告独立归档在本栏目；每个商品和子项也生成对应 Word 版，便于离线审阅、业务数据校验和内部流转。</p></div>
+      <div className="overall-report-card">
+        <div><span>MASTER REPORT / {REPORT_DATE}</span><h3>中国-印度供应链依赖图谱总分析报告</h3><p>汇总重点商品矩阵、化肥专题、工程设备专题、第三国路径边界、HS8 筛查码说明和结论准确度分级。</p></div>
+        <a href={reportHref("overall")} download>下载总报告 Word 版 ↗</a>
+      </div>
+      <div className="report-download-grid">{allCommodityRecords.map(item=><a href={reportHref(item.id)} download key={item.id}><span>HS8 {hs8Of(item)}</span><strong>{item.name}</strong><small>{statLevelOf(item)} · {item.completeYear.share.toFixed(1)}% · {reportAccuracyById[item.id]?.level??defaultReportAccuracy.level}</small></a>)}</div>
+    </section>
 
     <footer><div><strong>中印供应链依赖图谱</strong><p>公开研究工具 · 静态数据快照 · 无需登录</p></div><div><span>快照生成</span><b>{SNAPSHOT_DATE}</b></div><a href="#top">回到顶部 ↑</a></footer>
 
@@ -669,11 +704,12 @@ export default function Home() {
         <h2 id="drawer-title">{selectedRecord.name}</h2>
         <p className="drawer-english">{selectedRecord.english}</p>
         {selectedChildren.length>0&&<div className="commodity-subnav" role="tablist" aria-label={`${selected.name}子项`}>
-          {[selected,...selectedChildren].map((item,index)=><button key={item.id} role="tab" aria-selected={selectedRecord.id===item.id} className={selectedRecord.id===item.id?"active":""} onClick={()=>setSelectedSubitem(item.id)}><small>{index===0?"总览":`HS ${item.hs}`}</small><strong>{item.name}</strong></button>)}
+          {[selected,...selectedChildren].map((item,index)=><button key={item.id} role="tab" aria-selected={selectedRecord.id===item.id} className={selectedRecord.id===item.id?"active":""} onClick={()=>setSelectedSubitem(item.id)}><small>{index===0?"总览":`HS8 ${hs8Of(item)}`}</small><strong>{item.name}</strong></button>)}
         </div>}
-        <div className="drawer-tags"><code>{CURRENT_HS_VERSION} · {selectedRecord.hs}</code><span>{selectedRecord.category}</span>{selectedRecord.proxy&&<span>代理编码</span>}{selectedRecord.controlled&&<span className="risk">管制筛查</span>}</div>
+        <div className="drawer-tags"><code>{CURRENT_HS_VERSION} · HS8 {hs8Of(selectedRecord)}</code><span>{statLevelOf(selectedRecord)}</span><span>{selectedRecord.category}</span>{selectedRecord.proxy&&<span>代理编码</span>}{selectedRecord.controlled&&<span className="risk">管制筛查</span>}</div>
         <div className="report-status"><span className={`evidence-level evidence-${selectedReport.evidence.replace("中等偏低","medium-low").replace("中等","medium").replace("低","low")}`}>证据等级 · {selectedReport.evidence}</span><span>{selectedReport.status}</span></div>
         <div className="drawer-report-cover"><small>专项分析报告</small><h3>{selectedReport.title}</h3><p>{selectedReport.executive}</p></div>
+        <a className="report-download-btn" href={reportHref(selectedRecord.id)} download>下载本商品 Word 分析报告 ↗</a>
         <div className="drawer-metrics"><div><span>印度自中国进口</span><strong>{formatB(selectedRecord.completeYear.china)}</strong></div><div><span>印度全球进口</span><strong>{formatB(selectedRecord.completeYear.world)}</strong></div><div><span>对华来源占比</span><strong>{selectedRecord.completeYear.share.toFixed(1)}%</strong></div></div>
         <a className="drawer-source" href={COMTRADE} target="_blank" rel="noreferrer">UN Comtrade · 2025 · {CURRENT_HS_VERSION}（H6）· 访问 {selectedRecord.accessedAt} ↗</a>
 
@@ -705,7 +741,7 @@ export default function Home() {
         </section>
 
         <section><h3>商品定义与口径</h3><p>{selectedRecord.definition}</p></section>
-        <section><div className="drawer-section-title"><h3>月度数据与趋势</h3><span>2024-12—2026-06 · {CURRENT_HS_VERSION} · {selectedRecord.id==="fertilizer"?"HS31":selectedRecord.id.startsWith("fertilizer_")||selectedRecord.id.startsWith("tunnel_")||selectedRecord.id.startsWith("earthmoving_")?"HS6":selectedRecord.children?.length?"HS6 合并":"HS4"}</span></div><MonthlyTrend points={selectedMonthly}/></section>
+        <section><div className="drawer-section-title"><h3>月度数据与趋势</h3><span>2024-12—2026-06 · {CURRENT_HS_VERSION} · HS8 {hs8Of(selectedRecord)} · {statLevelOf(selectedRecord)}</span></div><MonthlyTrend points={selectedMonthly}/></section>
         <section><div className="drawer-section-title"><h3>五年趋势</h3><span>2021—2025 · {CROSSWALK_HS_VERSION} · 对华来源占比</span></div>{selectedRecord.trend?<div className="trend-chart">{selectedRecord.trend.map(point=><div className="trend-year" key={point.year}><span>{point.share.toFixed(1)}%</span><div><i style={{height:`${Math.max(6,point.share)}%`}}/></div><small>{point.year}</small></div>)}</div>:<div className="trend-unavailable"><strong>未跨版本合并</strong><p>该子项展示 HS 2022 月度序列；尚未建立可靠的 HS 2017→2022 年度对照序列。</p></div>}</section>
         <section><h3>主要替代供应国</h3><div className="alternatives">{selectedRecord.alternatives.map(country=><span key={country}>{country}</span>)}</div><p>按可比双边数据识别，表示其他来源，不代表短期内具备等量替代能力，也不自动构成中转国。</p></section>
         <section className="report-references"><h3>证据来源</h3><ul>{selectedReport.references.map(reference=><li key={reference}>{reference}</li>)}</ul><p>报告研究日期：{REPORT_DATE}。路径证据用于风险筛查，不构成违法转口、规避关税或规避管制的认定。</p></section>

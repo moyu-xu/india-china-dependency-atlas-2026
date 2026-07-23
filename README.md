@@ -60,6 +60,15 @@ npm run preview
 ## 更新数据
 
 年度矩阵、商品分析、父项/子项、结论与准确度规则位于 `src/App.tsx`；月度记录位于 `src/data/monthlyTrade.ts`。人工更新时可直接修改对应商品 ID 下的月份、进口额、占比与状态。盾构机相关 ID 为 `tunnel`、`tunnel_843031`、`tunnel_843039`；工程车相关 ID 为 `earthmoving`、`earthmoving_dumptruck`、`earthmoving_crane`、`earthmoving_mixer`。
+页面展示的商品编码使用 HS2022 8 位筛查码；如果公开统计只能复核到 HS31、HS4 或 HS6 合并口径，页面会同步标注“统计口径”。化肥专题相关 ID 为 `fertilizer`、`fertilizer_urea`、`fertilizer_dap`、`fertilizer_mop`、`fertilizer_npk`。
+
+Word 报告文件位于 `public/reports/`。修改商品数据、报告正文或准确度分级后，运行：
+
+```bash
+python scripts/generate-word-reports.py
+```
+
+该脚本会重新生成 1 份总报告 `overall.docx` 和每个商品/子项的 Word 分析报告。网页“报告下载”栏目与详情抽屉会直接引用这些文件。
 
 也可以运行下列命令，按当前 HS31、HS4、HS6 单项及合并编码从 UN Comtrade 重新生成整个月度文件：
 
