@@ -2,6 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 
 const API = "https://comtradeapi.un.org/public/v1/preview/C/M/HS";
+const REQUIRED_CLASSIFICATION = "H6"; // UN Comtrade code for HS 2022.
 const OUTPUT = resolve("src/data/monthlyTrade.ts");
 const ACCESS_DATE = new Date().toISOString().slice(0, 10);
 
@@ -64,6 +65,11 @@ async function fetchPeriod(period, attempt = 1) {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const payload = await response.json();
     if (payload.error) throw new Error(payload.error);
+    const incompatible = payload.data.filter((row) => row.classificationCode !== REQUIRED_CLASSIFICATION);
+    if (incompatible.length > 0) {
+      const versions = [...new Set(incompatible.map((row) => row.classificationCode))].join(", ");
+      throw new Error(`Expected HS 2022 (${REQUIRED_CLASSIFICATION}), received: ${versions}`);
+    }
     console.log(`${period}: ${payload.count} records`);
     return payload.data;
   } catch (error) {
@@ -83,10 +89,10 @@ function render(results) {
     '  status: "available" | "pending";',
     "};",
     "",
-    "// Unit: US$ million. India-reported monthly imports, keyed by HS chapter/HS4/HS6.",
+    "// Unit: US$ million. India-reported monthly imports classified under HS 2022 (UN Comtrade H6).",
     "// Null values are intentionally retained when the source has not published that month.",
     `export const MONTHLY_SOURCE_ACCESSED = \"${ACCESS_DATE}\";`,
-    "export const MONTHLY_SOURCE_LABEL = \"UN Comtrade monthly API\";",
+    "export const MONTHLY_SOURCE_LABEL = \"UN Comtrade monthly API · HS 2022 (H6)\";",
     "export const MONTHLY_SOURCE_URL = \"https://comtradeplus.un.org/TradeFlow\";",
     "",
     "export const monthlyTradeById: Record<string, MonthlyTradePoint[]> = {",

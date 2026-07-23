@@ -6,10 +6,10 @@ export type MonthlyTradePoint = {
   status: "available" | "pending";
 };
 
-// Unit: US$ million. India-reported monthly imports, keyed by HS chapter/HS4/HS6.
+// Unit: US$ million. India-reported monthly imports classified under HS 2022 (UN Comtrade H6).
 // Null values are intentionally retained when the source has not published that month.
 export const MONTHLY_SOURCE_ACCESSED = "2026-07-23";
-export const MONTHLY_SOURCE_LABEL = "UN Comtrade monthly API";
+export const MONTHLY_SOURCE_LABEL = "UN Comtrade monthly API · HS 2022 (H6)";
 export const MONTHLY_SOURCE_URL = "https://comtradeplus.un.org/TradeFlow";
 
 export const monthlyTradeById: Record<string, MonthlyTradePoint[]> = {
