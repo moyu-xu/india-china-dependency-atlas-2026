@@ -217,6 +217,13 @@ input[type="range"] { width: 100%; accent-color: var(--gold); cursor: pointer; }
 .route-analysis div { display: grid; grid-template-columns: 72px 1fr; gap: 12px; }
 .route-analysis dt { color: var(--gold-bright); font-size: 12px; font-weight: 700; }
 .route-analysis dd { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.65; }
+.hs8-profile { display: grid; gap: 14px; margin-top: 14px; }
+.hs8-profile > div { border: 1px solid var(--line); padding: 14px; background: rgba(255,255,255,.02); }
+.hs8-profile span { display: block; color: var(--gold-bright); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 6px; }
+.hs8-profile strong { display: block; color: var(--cream); font-family: var(--mono); font-size: 15px; letter-spacing: .04em; }
+.hs8-profile small { display: block; color: var(--muted); margin-top: 5px; }
+.hs8-profile p { margin: 4px 0 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.hs8-profile p b { color: var(--cream); }
 .route-subheading { display: grid; gap: 7px; margin: 30px 0 16px; padding-top: 20px; border-top: 1px solid var(--line-strong); }
 .route-subheading span { color: var(--gold); font: 700 11px var(--font-geist-mono), monospace; letter-spacing: .16em; }
 .route-subheading h3 { margin: 0; color: var(--text); font: 600 24px "Noto Serif SC", serif; }
