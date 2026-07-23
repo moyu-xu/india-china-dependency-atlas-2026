@@ -61,10 +61,28 @@ export type RouteSignal = {
   product: string;
   hs: string;
   hub: string;
+  nodes: string[];
   coverage: "2023→2024";
   cnToHub: [number, number];
   hubToIndia: [number, number];
+  legs?: { label: string; values: [number, number] }[];
   directToIndia: [number, number];
+  reliability: "高" | "中" | "低";
+  evidence: string;
+  inference: string;
+  caveat: string;
+  source: string;
+};
+
+export type RouteNetworkSignal = {
+  id: string;
+  product: string;
+  hs: string;
+  nodes: string[];
+  reliability: "高" | "中" | "低";
+  evidence: string;
+  inference: string;
+  caveat: string;
   source: string;
 };
 
@@ -465,10 +483,127 @@ const controls: ControlRecord[] = [
 ];
 
 const routes: RouteSignal[] = [
-  { id:"my-graphite", product:"天然石墨", hs:"2504", hub:"马来西亚", coverage:"2023→2024", cnToHub:[0.402,0.622], hubToIndia:[0.0146,0.647], directToIndia:[15.18,4.48], source:COMTRADE },
-  { id:"vn-artificial", product:"人造石墨", hs:"3801", hub:"越南", coverage:"2023→2024", cnToHub:[12.87,24.08], hubToIndia:[0,0.213], directToIndia:[79.59,60.84], source:COMTRADE },
-  { id:"sg-rareearth", product:"稀土化合物", hs:"2846", hub:"新加坡", coverage:"2023→2024", cnToHub:[0.057,2.134], hubToIndia:[0.0107,0.0102], directToIndia:[5.20,4.32], source:COMTRADE },
-  { id:"ae-tungsten", product:"钨及其制品", hs:"8101", hub:"阿联酋", coverage:"2023→2024", cnToHub:[1.232,0.628], hubToIndia:[0.00073,0.00001], directToIndia:[17.96,18.69], source:COMTRADE },
+  {
+    id:"my-graphite",
+    product:"天然石墨",
+    hs:"2504",
+    hub:"马来西亚",
+    nodes:["中国","马来西亚","印度"],
+    coverage:"2023→2024",
+    cnToHub:[0.402,0.622],
+    hubToIndia:[0.0146,0.647],
+    directToIndia:[15.18,4.48],
+    reliability:"中",
+    evidence:"UN Comtrade 镜像统计显示，中国→马来西亚与马来西亚→印度在同一 HS4、同一年度窗口内同步上升，同时中国→印度直接流明显下降。",
+    inference:"可作为马来西亚节点的优先核验信号，重点查原产地证书、装运港、加工记录和印度进口商对应关系。",
+    caveat:"HS 2504 不能识别纯度、粒径、球形化等受控参数；同步增长也可能来自马来西亚本地需求、库存或不同货物。",
+    source:COMTRADE
+  },
+  {
+    id:"vn-artificial",
+    product:"人造石墨",
+    hs:"3801",
+    hub:"越南",
+    nodes:["中国","越南","印度"],
+    coverage:"2023→2024",
+    cnToHub:[12.87,24.08],
+    hubToIndia:[0,0.213],
+    directToIndia:[79.59,60.84],
+    reliability:"中",
+    evidence:"UN Comtrade 显示中国→越南增至 2,408 万美元，越南→印度由零增至 21.3 万美元，中国→印度直接流同期下降。",
+    inference:"越南可列为弱到中等优先级的加工贸易或再出口核验节点，适合用企业提单和印度买方数据做穿透。",
+    caveat:"越南→印度金额基数很小，不能据此估算转口规模；HS 3801 也覆盖多类人造石墨及碳素制品。",
+    source:COMTRADE
+  },
+  {
+    id:"sg-rareearth",
+    product:"稀土化合物",
+    hs:"2846",
+    hub:"新加坡",
+    nodes:["中国","新加坡","印度"],
+    coverage:"2023→2024",
+    cnToHub:[0.057,2.134],
+    hubToIndia:[0.0107,0.0102],
+    directToIndia:[5.20,4.32],
+    reliability:"低",
+    evidence:"UN Comtrade 显示中国→新加坡大幅增加，但新加坡→印度未同步增加，且金额仅约 1 万美元量级。",
+    inference:"目前更像上游异常流向或区域库存信号，不足以构成中国→新加坡→印度路径判断。",
+    caveat:"稀土化合物必须下钻到元素、化合物形态、含量和最终用途；HS4 只能做预警池。",
+    source:COMTRADE
+  },
+  {
+    id:"ae-tungsten",
+    product:"钨及其制品",
+    hs:"8101",
+    hub:"阿联酋",
+    nodes:["中国","阿联酋","印度"],
+    coverage:"2023→2024",
+    cnToHub:[1.232,0.628],
+    hubToIndia:[0.00073,0.00001],
+    directToIndia:[17.96,18.69],
+    reliability:"低",
+    evidence:"UN Comtrade 显示两段贸易没有同步上升，中国→印度直接流反而小幅增加。",
+    inference:"该节点更适合作为排除项或低优先级监测对象，不宜列为转口路径证据。",
+    caveat:"钨产品受形态、纯度和用途影响很大；公开 HS4 数据不足以识别受控物项。",
+    source:COMTRADE
+  },
+  {
+    id:"id-dumptruck",
+    product:"非公路用自卸车",
+    hs:"870410",
+    hub:"印度尼西亚",
+    nodes:["中国","印度尼西亚","印度"],
+    coverage:"2023→2024",
+    cnToHub:[198.0,268.47],
+    hubToIndia:[1.2,8.488],
+    directToIndia:[12.98,18.07],
+    reliability:"中",
+    evidence:"公开镜像贸易与专题报告显示，2024 年中国→印度尼西亚达到 2.6847 亿美元，印度自印尼进口 848.8 万美元，印度自中国进口也同步上升。",
+    inference:"印尼是工程车项下最值得优先核验的第三国节点，应查车架号、制造厂、原产地证书和是否发生实质加工。",
+    caveat:"印尼本身也是矿业车辆终端市场；中国→印尼与印尼→印度可能不是同一车辆或同一批订单。",
+    source:COMTRADE
+  },
+  {
+    id:"sg-tunnel",
+    product:"盾构机筛查池",
+    hs:"843031/843039",
+    hub:"新加坡",
+    nodes:["中国","新加坡","印度"],
+    coverage:"2023→2024",
+    cnToHub:[0.84,2.36],
+    hubToIndia:[0.18,1.08],
+    directToIndia:[32.9,42.5],
+    reliability:"低",
+    evidence:"UN Comtrade/WITS 宽口径筛查池可见新加坡两端贸易重叠，但制造商公开项目资料同时存在中国直运印度的反证。",
+    inference:"新加坡应被列为单证核验节点，而不是已确认中转国；重点核对设备序列号、刀盘直径、工法和项目业主。",
+    caveat:"HS 843031/843039 混入采煤机、截岩机和其他掘进设备，不能直接等同于盾构机台数或转口金额。",
+    source:COMTRADE
+  },
+];
+
+const routeNetworks: RouteNetworkSignal[] = [
+  {
+    id:"battery-vn-my",
+    product:"蓄电池",
+    hs:"8507",
+    nodes:["中国","越南","马来西亚","印度"],
+    reliability:"低",
+    evidence:"UN Comtrade/WITS 与行业公开资料只能支持越南、马来西亚均为电池供应链和区域分拨相关节点，尚未形成中国→越南→马来西亚→印度的逐票金额闭环。",
+    inference:"该链条只能作为多节点供应网络核验路径，适合核查电芯、模组、PACK 的生产工序和原产地转换。",
+    caveat:"三段金额并非同一货物闭环，且电池产品可能经历实质加工；不能据此认定中国电池经两国转口印度。",
+    source:COMTRADE
+  },
+  {
+    id:"ic-vn-my-ph",
+    product:"集成电路",
+    hs:"8542",
+    nodes:["中国","越南","马来西亚","菲律宾","印度"],
+    reliability:"低",
+    evidence:"UN Comtrade/WITS 与公开产业分工资料支持东盟封测、组装和分拨网络存在，但无法用公开聚合数据证明同一芯片依次经过越南、马来西亚、菲律宾后进入印度。",
+    inference:"这更适合解释为封测、组装和区域分工网络，应作为供应链暴露核验清单，而非简单转口结论。",
+    caveat:"半导体跨境流转常发生实质性转型，多国路径金额不能相加，也不能证明同一芯片依次经过所有节点。",
+    source:COMTRADE
+  },
 ];
 
 const sources = [
@@ -494,6 +629,12 @@ const formatB = (v:number) => v >= 1 ? `$${v.toFixed(v >= 10 ? 1 : 2)}B` : `$${(
 const formatM = (v:number) => v >= 1 ? `$${v.toFixed(v >= 10 ? 1 : 2)}M` : `$${(v*1000).toFixed(0)}K`;
 const growth = (a:number,b:number) => b === 0 ? (a > 0 ? Infinity : 0) : (a-b)/b*100;
 const signed = (v:number) => Number.isFinite(v) ? `${v >= 0 ? "+" : ""}${v.toFixed(0)}%` : "新增";
+const routeLegs = (route:RouteSignal) => route.legs ?? [
+  { label:"中国→第三国", values:route.cnToHub },
+  { label:"第三国→印度", values:route.hubToIndia },
+];
+const weakestRouteValue = (route:RouteSignal) => Math.min(...routeLegs(route).map(leg=>leg.values[1]));
+const weakestRouteGrowth = (route:RouteSignal) => Math.min(...routeLegs(route).map(leg=>growth(leg.values[1],leg.values[0])));
 
 const reportAccuracyById: Record<string,{level:AccuracyLevel;reason:string}> = {
   ic: { level:"低概率", reason:"直接进口依赖有数据支撑，但多节点网络排序仍缺少逐票货物流闭环。" },
@@ -591,7 +732,7 @@ export default function Home() {
     return (category === "全部" || item.category === category) && (!q || `${item.name} ${item.english} ${item.hs} ${hs8Of(item)} ${item.searchTerms??""}`.toLowerCase().includes(q)) && item.completeYear.share >= minShare && item.completeYear.china >= minValue;
   }).sort((a,b)=>b.completeYear.share-a.completeYear.share),[category,search,minShare,minValue]);
 
-  const activeRoutes = routes.filter(route => route.cnToHub[1] >= routeValue && route.hubToIndia[1] >= routeValue && growth(route.cnToHub[1],route.cnToHub[0]) >= routeGrowth && growth(route.hubToIndia[1],route.hubToIndia[0]) >= routeGrowth);
+  const activeRoutes = routes.filter(route => weakestRouteValue(route) >= routeValue && weakestRouteGrowth(route) >= routeGrowth);
   const chinaTotal = commodities.reduce((sum,item)=>sum+item.completeYear.china,0);
   const worldTotal = commodities.reduce((sum,item)=>sum+item.completeYear.world,0);
   const weightedShare = chinaTotal/worldTotal*100;
@@ -675,11 +816,13 @@ export default function Home() {
     <section className="section spotlight"><div className="section-heading"><div><p>EQUIPMENT FOCUS</p><h2>工程设备专题</h2></div><p>盾构机按项目证据与两个 HS6 筛查池阅读，工程车按三个严格整车子项阅读，并与维保零件分开判断。</p></div><div className="spotlight-grid">{["tunnel","earthmoving","machineparts"].map((id,index)=>{const item=commodities.find(x=>x.id===id)!;return <button className="spotlight-card" key={id} onClick={()=>openCommodity(item)}><span className="card-index">0{index+1} / HS8 {hs8Of(item)}</span><div className={`equipment-visual v${index+1}`} aria-hidden="true"><i/><i/><i/></div><p>{item.english}</p><h3>{item.name}</h3><strong className="big-share">{item.completeYear.share.toFixed(1)}<small>%</small></strong><span className="card-link">查看证据卡片 ↗</span></button>})}</div></section>
 
     <section className="section route-section" id="routes">
-      <div className="section-heading inverse"><div><p>ROUTE SIGNALS / SCREENING ONLY</p><h2>可能的第三国路径信号</h2></div><p>同一 HS 组中“中国→第三国”与“第三国→印度”同步上升，并同时展示“中国→印度”变化。仅用于筛查，不认定实际转口或违法。</p></div>
-      <div className="route-controls"><label><span>两段贸易额下限 <b>{formatM(routeValue)}</b></span><input type="range" min="0" max="3" step="0.1" value={routeValue} onChange={e=>setRouteValue(Number(e.target.value))}/></label><label><span>两段增幅下限 <b>{routeGrowth}%</b></span><input type="range" min="0" max="100" step="5" value={routeGrowth} onChange={e=>setRouteGrowth(Number(e.target.value))}/></label><div><strong>{activeRoutes.length}</strong><span>条路径信号</span></div></div>
-      <div className="route-list">{activeRoutes.map(route=><article className="route-card" key={route.id}><div className="route-title"><div><span>HS {route.hs} · {route.coverage}</span><h3>{route.product} / {route.hub}</h3></div><a href={route.source} target="_blank" rel="noreferrer">UN ↗</a></div><div className="route-flow"><div className="node china"><small>起点</small><strong>中国</strong><span>{formatM(route.cnToHub[1])}</span></div><div className="edge"><b>{signed(growth(route.cnToHub[1],route.cnToHub[0]))}</b><i/></div><div className="node hub"><small>第三国</small><strong>{route.hub}</strong><span>{formatM(route.hubToIndia[1])}</span></div><div className="edge"><b>{signed(growth(route.hubToIndia[1],route.hubToIndia[0]))}</b><i/></div><div className="node india"><small>终点</small><strong>印度</strong><span>直接流 {formatM(route.directToIndia[1])}</span></div></div><p>中国→印度直接流：{formatM(route.directToIndia[0])} → {formatM(route.directToIndia[1])}（{signed(growth(route.directToIndia[1],route.directToIndia[0]))}）</p></article>)}</div>
+      <div className="section-heading inverse"><div><p>ROUTE SIGNALS / SCREENING ONLY</p><h2>可能的第三国路径信号</h2></div><p>同一 HS 组中“中国→一个或多个中转节点→印度”的可比贸易段同步上升，并同时展示“中国→印度”变化。仅用于筛查，不认定实际转口或违法。</p></div>
+      <div className="route-controls"><label><span>路径分段贸易额下限 <b>{formatM(routeValue)}</b></span><input type="range" min="0" max="3" step="0.1" value={routeValue} onChange={e=>setRouteValue(Number(e.target.value))}/></label><label><span>路径分段增幅下限 <b>{routeGrowth}%</b></span><input type="range" min="0" max="100" step="5" value={routeGrowth} onChange={e=>setRouteGrowth(Number(e.target.value))}/></label><div><strong>{activeRoutes.length}</strong><span>条路径信号</span></div></div>
+      <div className="route-list">{activeRoutes.map(route=><article className="route-card" key={route.id}><div className="route-title"><div><span>HS {route.hs} · {route.coverage}</span><h3>{route.product} / {route.hub}</h3></div><div className="route-title-actions"><em className={`reliability r-${route.reliability}`}>可靠性 {route.reliability}</em><a href={route.source} target="_blank" rel="noreferrer">UN ↗</a></div></div><div className="route-chain">{route.nodes.map((node,index)=><span key={`${route.id}-${node}-${index}`}><b className={index===0?"origin":index===route.nodes.length-1?"destination":"transit"}>{node}</b>{index<route.nodes.length-1&&<i>→</i>}</span>)}</div><div className="route-leg-list">{routeLegs(route).map(leg=><div key={`${route.id}-${leg.label}`}><span>{leg.label}</span><strong>{formatM(leg.values[0])} → {formatM(leg.values[1])}</strong><em>{signed(growth(leg.values[1],leg.values[0]))}</em></div>)}</div><p>中国→印度直接流：{formatM(route.directToIndia[0])} → {formatM(route.directToIndia[1])}（{signed(growth(route.directToIndia[1],route.directToIndia[0]))}）</p><dl className="route-analysis"><div><dt>公开数据</dt><dd>{route.evidence}</dd></div><div><dt>推演判断</dt><dd>{route.inference}</dd></div><div><dt>限制</dt><dd>{route.caveat}</dd></div></dl></article>)}</div>
+      <div className="route-subheading"><span>MULTI-NODE WATCHLIST</span><h3>多中转节点待核验网络</h3><p>以下路径来自公开贸易统计、产业分工资料和报告中的网络线索；因缺少逐票闭环，不进入金额阈值筛选。</p></div>
+      <div className="route-list route-network-cards">{routeNetworks.map(route=><article className="route-card" key={route.id}><div className="route-title"><div><span>HS {route.hs} · 多节点线索</span><h3>{route.product}</h3></div><div className="route-title-actions"><em className={`reliability r-${route.reliability}`}>可靠性 {route.reliability}</em><a href={route.source} target="_blank" rel="noreferrer">来源 ↗</a></div></div><div className="route-chain">{route.nodes.map((node,index)=><span key={`${route.id}-${node}-${index}`}><b className={index===0?"origin":index===route.nodes.length-1?"destination":"transit"}>{node}</b>{index<route.nodes.length-1&&<i>→</i>}</span>)}</div><dl className="route-analysis"><div><dt>公开数据</dt><dd>{route.evidence}</dd></div><div><dt>推演判断</dt><dd>{route.inference}</dd></div><div><dt>限制</dt><dd>{route.caveat}</dd></div></dl></article>)}</div>
       {activeRoutes.length===0&&<div className="route-empty"><span>∅</span><div><strong>当前阈值下没有路径信号</strong><p>这不代表不存在转口。默认阈值要求两段贸易额均不低于 100 万美元、可比期增幅均不低于 25%；尝试降低金额阈值可查看弱信号。</p><button onClick={()=>{setRouteValue(.2);setRouteGrowth(25)}}>查看弱信号</button></div></div>}
-      <div className="route-warning"><strong>判读边界</strong><p>同步上升可能由产业扩张、库存、加工贸易、价格变化或统计差异造成。信号不是规避管制、非法转口或个案事实的认定；缺失月份不插值，不完整国家不进入排名。</p></div>
+      <div className="route-warning"><strong>判读边界</strong><p>同步上升可能由产业扩张、库存、加工贸易、价格变化或统计差异造成。多节点路径表示需要核验的供应网络，不表示同一批货物依次经过所有国家。信号不是规避管制、非法转口或个案事实的认定；缺失月份不插值，不完整国家不进入排名。</p></div>
     </section>
 
     <section className="section" id="policy"><div className="section-heading"><div><p>CONTROL TIMELINE</p><h2>政策与管制时间线</h2></div><p>HS 编码只是筛查入口。是否受控取决于管制编码、技术参数、最终用户、最终用途以及查询时有效的政策。</p></div><div className="timeline">{policies.map((item,index)=><a className="timeline-item" href={item.url} target="_blank" rel="noreferrer" key={item.date}><span>{item.date}</span><i>{String(index+1).padStart(2,"0")}</i><div><h3>{item.title} ↗</h3><p>{item.body}</p></div></a>)}</div><div className="control-ledger"><h3>可观察管制筛查表</h3>{controls.map(item=><a href={item.source} target="_blank" rel="noreferrer" key={item.referenceHs}><span>{item.referenceHs}</span><strong>{item.item}</strong><p>{item.parameters}</p><em>{item.status} ↗</em></a>)}</div></section>
