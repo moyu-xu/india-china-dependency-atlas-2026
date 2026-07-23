@@ -1,6 +1,6 @@
 # 中印供应链依赖图谱
 
-一个可脱离 ChatGPT Sites 独立运行的 React + Vite 单页研究站点。项目完整保留依赖矩阵、行业与 HS 筛选、商品详情、五年趋势、替代供应国、工程设备专题、第三国路径信号阈值、政策时间线、来源中心和移动端布局。
+一个可脱离 ChatGPT Sites 独立运行的 React + Vite 单页研究站点。项目完整保留依赖矩阵、行业与 HS 筛选、商品详情、月度与五年趋势、结论准确度、替代供应国、工程设备专题、第三国路径信号阈值、政策时间线、来源中心和移动端布局。
 
 ## 环境要求
 
@@ -34,9 +34,13 @@ npm run preview
 │  ├─ favicon.svg
 │  └─ og.png
 ├─ src/
-│  ├─ App.tsx          # 页面、静态数据和全部交互逻辑
+│  ├─ data/
+│  │  └─ monthlyTrade.ts # 2024-12—2026-06 月度数据
+│  ├─ App.tsx          # 页面、年度数据、商品报告和全部交互逻辑
 │  ├─ main.tsx         # React 入口
 │  └─ styles.css       # 完整视觉与响应式样式
+├─ scripts/
+│  └─ fetch-monthly-data.mjs # 从 UN Comtrade 重建月度数据文件
 ├─ index.html
 ├─ package.json
 ├─ vite.config.ts
@@ -46,6 +50,7 @@ npm run preview
 ## 数据口径
 
 - 2025 完整自然年 HS4 矩阵来自 UN Comtrade 静态快照。
+- 商品详情的月度序列覆盖 2024-12—2026-06；没有从官方 API 取回的月份保留为空，不插值、不预测。
 - 2026 最新脉冲引用印度 DGCI&S TradeStat 与贸易情报和分析门户。
 - 页面浏览时不会调用外部数据 API；外部请求仅发生在用户主动打开来源链接或加载 Google Fonts 时。
 - “依赖”指同一时期、同一 HS 编码下“印度自中国进口额 ÷ 印度全球进口额”，不等于印度国内消费或生产的总体依赖。
@@ -53,7 +58,15 @@ npm run preview
 
 ## 更新数据
 
-静态记录位于 `src/App.tsx`。更新时应同步修改快照日期、数据期、来源发布日期、访问日期和限制说明，并重新执行：
+年度矩阵、商品分析、结论与准确度规则位于 `src/App.tsx`；月度记录位于 `src/data/monthlyTrade.ts`。人工更新时可直接修改对应商品 ID 下的月份、进口额、占比与状态。
+
+也可以运行下列命令，按当前 16 个 HS4 编码从 UN Comtrade 重新生成整个月度文件：
+
+```bash
+node scripts/fetch-monthly-data.mjs
+```
+
+更新时应同步修改快照日期、数据期、来源发布日期、访问日期和限制说明，并重新执行：
 
 ```bash
 npm run typecheck

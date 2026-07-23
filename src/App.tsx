@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
+import { MONTHLY_SOURCE_ACCESSED, MONTHLY_SOURCE_LABEL, MONTHLY_SOURCE_URL, monthlyTradeById, type MonthlyTradePoint } from "./data/monthlyTrade";
 
 type Category = "全部" | "原材料" | "医药化工" | "电子与电力" | "工业机械" | "工程设备" | "车辆零部件";
 type TrendPoint = { year: string; china: number; world: number; share: number };
 type EvidenceLevel = "中等" | "中等偏低" | "低";
+type AccuracyLevel = "高概率" | "低概率" | "推测";
 
 type RoutePath = {
   nodes: string[];
@@ -374,6 +376,69 @@ const formatM = (v:number) => v >= 1 ? `$${v.toFixed(v >= 10 ? 1 : 2)}M` : `$${(
 const growth = (a:number,b:number) => b === 0 ? (a > 0 ? Infinity : 0) : (a-b)/b*100;
 const signed = (v:number) => Number.isFinite(v) ? `${v >= 0 ? "+" : ""}${v.toFixed(0)}%` : "新增";
 
+const reportAccuracyById: Record<string,{level:AccuracyLevel;reason:string}> = {
+  ic: { level:"低概率", reason:"直接进口依赖有数据支撑，但多节点网络排序仍缺少逐票货物流闭环。" },
+  battery: { level:"低概率", reason:"高集中度结论明确；越南及其他路径节点的优先级仍需 BOM、工序与原产地单证验证。" },
+  semiconductor: { level:"低概率", reason:"直接依赖可复核，但东盟加工节点与中国投入之间尚未形成货物级对应。" },
+  graphite: { level:"推测", reason:"HS4 无法识别纯度、粒径和形态等受控参数，需以产品规格与许可证材料复核。" },
+  rareearth: { level:"推测", reason:"宽税号无法区分具体元素、化合物形态与最终用途，当前仅作风险假设。" },
+  tunnel: { level:"推测", reason:"HS 8430 是盾构及隧道设备的代理口径，不能替代设备型号和项目级业务数据。" },
+};
+
+const defaultReportAccuracy = { level:"高概率", reason:"结论主要基于可复核的 HS4 进口规模、来源占比和审慎的证据边界表述。" } as const;
+
+const formatMonthlyValue = (value:number|null) => value === null ? "—" : value.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+
+function MonthlyTrend({points}:{points:MonthlyTradePoint[]}) {
+  const [metric,setMetric] = useState<"value"|"share">("value");
+  const available = points.filter(point=>point.status==="available" && point.world!==null);
+  const latest = available.at(-1);
+  const width = 720;
+  const height = 270;
+  const plot = { left:56, right:18, top:24, bottom:45 };
+  const plotWidth = width-plot.left-plot.right;
+  const plotHeight = height-plot.top-plot.bottom;
+  const maxValue = metric==="share" ? 100 : Math.max(1,...available.flatMap(point=>[point.china??0,point.world??0]));
+  const x = (index:number) => plot.left+(points.length===1?0:index/(points.length-1)*plotWidth);
+  const y = (value:number) => plot.top+plotHeight-(value/maxValue)*plotHeight;
+  const pathFor = (key:"china"|"world"|"share") => points.map((point,index)=>({value:point[key],index})).filter(item=>item.value!==null).map((item,index)=>`${index===0?"M":"L"}${x(item.index).toFixed(1)},${y(item.value as number).toFixed(1)}`).join(" ");
+  const pendingIndex = points.findIndex(point=>point.status==="pending");
+  const gridValues = metric==="share" ? [0,25,50,75,100] : [0,.25,.5,.75,1].map(ratio=>maxValue*ratio);
+
+  return <div className="monthly-module">
+    <div className="monthly-summary">
+      <div><span>最新可用月份</span><strong>{latest?.period??"待发布"}</strong></div>
+      <div><span>自中国进口</span><strong>{latest?`$${formatMonthlyValue(latest.china)}M`:"—"}</strong></div>
+      <div><span>全球进口</span><strong>{latest?`$${formatMonthlyValue(latest.world)}M`:"—"}</strong></div>
+      <div><span>对华来源占比</span><strong>{latest?.share===null||latest?.share===undefined?"—":`${latest.share.toFixed(1)}%`}</strong></div>
+    </div>
+    <div className="monthly-toolbar">
+      <div className="monthly-toggle" aria-label="趋势图指标">
+        <button className={metric==="value"?"active":""} onClick={()=>setMetric("value")}>进口额</button>
+        <button className={metric==="share"?"active":""} onClick={()=>setMetric("share")}>对华占比</button>
+      </div>
+      <span>单位：{metric==="value"?"US$ million":"%"}</span>
+    </div>
+    <div className="monthly-chart-wrap">
+      <svg className="monthly-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`2024年12月至2026年6月${metric==="value"?"进口额":"对华占比"}趋势图`}>
+        {pendingIndex>=0&&<rect className="pending-zone" x={Math.max(plot.left,x(pendingIndex)-12)} y={plot.top} width={width-Math.max(plot.left,x(pendingIndex)-12)-plot.right} height={plotHeight}/>}
+        {gridValues.map(value=><g key={value}><line className="chart-grid" x1={plot.left} x2={width-plot.right} y1={y(value)} y2={y(value)}/><text className="chart-y-label" x={plot.left-10} y={y(value)+4} textAnchor="end">{metric==="share"?`${value.toFixed(0)}%`:value.toFixed(maxValue<10?1:0)}</text></g>)}
+        {metric==="value"?<><path className="monthly-line world" d={pathFor("world")}/><path className="monthly-line china" d={pathFor("china")}/></>:<path className="monthly-line share" d={pathFor("share")}/>}
+        {points.map((point,index)=>(index%3===0||index===points.length-1)?<text className="chart-x-label" key={point.period} x={x(index)} y={height-14} textAnchor={index===0?"start":index===points.length-1?"end":"middle"}>{point.period}</text>:null)}
+        {pendingIndex>=0&&<text className="pending-label" x={(x(pendingIndex)+width-plot.right)/2} y={plot.top+42} textAnchor="middle">待发布 / 待核验</text>}
+      </svg>
+      <div className="monthly-legend">{metric==="value"?<><span><i className="legend-world"/>全球进口</span><span><i className="legend-china"/>自中国进口</span></>:<span><i className="legend-share"/>对华来源占比</span>}</div>
+    </div>
+    <div className="monthly-table-wrap">
+      <table className="monthly-table">
+        <thead><tr><th>月份</th><th>自中国进口</th><th>全球进口</th><th>对华占比</th><th>状态</th></tr></thead>
+        <tbody>{points.map(point=><tr key={point.period} className={point.status==="pending"?"pending":""}><td>{point.period}</td><td>{point.china===null?"—":`$${formatMonthlyValue(point.china)}M`}</td><td>{point.world===null?"—":`$${formatMonthlyValue(point.world)}M`}</td><td>{point.share===null?"—":`${point.share.toFixed(1)}%`}</td><td>{point.status==="available"?"已发布":"待发布/核验"}</td></tr>)}</tbody>
+      </table>
+    </div>
+    <p className="monthly-note">月度序列来源：<a href={MONTHLY_SOURCE_URL} target="_blank" rel="noreferrer">{MONTHLY_SOURCE_LABEL}</a>，访问 {MONTHLY_SOURCE_ACCESSED}。印度 TradeStat 声明已更新至 2026-05，但本快照仅展示可由 UN Comtrade API 逐月复核的数值；其余月份不作估算。</p>
+  </div>;
+}
+
 export default function Home() {
   const [category,setCategory] = useState<Category>("全部");
   const [search,setSearch] = useState("");
@@ -402,6 +467,8 @@ export default function Home() {
   const highCount = commodities.filter(item=>item.completeYear.share>=50).length;
   const reset = () => { setCategory("全部"); setSearch(""); setMinShare(0); setMinValue(0); };
   const selectedReport = selected ? commodityReports[selected.id] : null;
+  const selectedMonthly = selected ? monthlyTradeById[selected.id]??[] : [];
+  const selectedAccuracy = selectedReport && selected ? reportAccuracyById[selected.id]??defaultReportAccuracy : null;
 
   return <main>
     <header className="topbar">
@@ -414,7 +481,7 @@ export default function Home() {
       <div className="hero-grid" aria-hidden="true"/>
       <div className="hero-copy">
         <p className="eyebrow"><span>RESEARCH BRIEF / 02</span> 可审计供应链情报</p>
-        <h1>读懂印度制造的<br/><em>中国投入品底座</em></h1>
+        <h1>中国-印度<br/><em>供应链依赖图谱</em></h1>
         <p className="dek">从原材料、药物中间体到电力设备、工程机械与零配件，观察进口来源集中度、替代供应国，以及受管制物项的第三国路径信号。</p>
         <div className="hero-actions"><a className="primary-btn" href="#matrix">进入依赖矩阵 <span>↗</span></a><a className="text-btn" href="#method">先读方法口径</a></div>
       </div>
@@ -492,7 +559,9 @@ export default function Home() {
         </section>
 
         <section className="report-conclusion">
-          <span>CONCLUSION</span><h3>四、结论</h3><p>{selectedReport.conclusion}</p>
+          <div className="conclusion-heading"><div><span>CONCLUSION</span><h3>四、结论</h3></div>{selectedAccuracy&&<strong className={`accuracy ${selectedAccuracy.level==="高概率"?"accuracy-high":selectedAccuracy.level==="低概率"?"accuracy-low":"accuracy-inference"}`}>准确度 · {selectedAccuracy.level}</strong>}</div>
+          <p>{selectedReport.conclusion}</p>
+          {selectedAccuracy&&<small className="accuracy-reason">判定依据：{selectedAccuracy.reason}</small>}
         </section>
 
         <section>
@@ -501,6 +570,7 @@ export default function Home() {
         </section>
 
         <section><h3>商品定义与口径</h3><p>{selected.definition}</p></section>
+        <section><div className="drawer-section-title"><h3>月度数据与趋势</h3><span>2024-12—2026-06 · HS4</span></div><MonthlyTrend points={selectedMonthly}/></section>
         <section><div className="drawer-section-title"><h3>五年趋势</h3><span>2021—2025 · 对华来源占比</span></div>{selected.trend?<div className="trend-chart">{selected.trend.map(point=><div className="trend-year" key={point.year}><span>{point.share.toFixed(1)}%</span><div><i style={{height:`${Math.max(6,point.share)}%`}}/></div><small>{point.year}</small></div>)}</div>:<div className="trend-unavailable"><strong>未跨期合并</strong><p>该商品未完成可靠的五年编码对照，因此仅展示 2025 完整年。</p></div>}</section>
         <section><h3>主要替代供应国</h3><div className="alternatives">{selected.alternatives.map(country=><span key={country}>{country}</span>)}</div><p>按可比双边数据识别，表示其他来源，不代表短期内具备等量替代能力，也不自动构成中转国。</p></section>
         <section className="report-references"><h3>证据来源</h3><ul>{selectedReport.references.map(reference=><li key={reference}>{reference}</li>)}</ul><p>报告研究日期：{REPORT_DATE}。路径证据用于风险筛查，不构成违法转口、规避关税或规避管制的认定。</p></section>
