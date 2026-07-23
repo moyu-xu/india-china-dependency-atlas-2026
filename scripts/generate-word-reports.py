@@ -81,18 +81,12 @@ def string_field(block: str, field: str, default: str = "") -> str:
 
 
 def to_hs8(hs: str) -> str:
-    return "/".join(part.ljust(8, "0") for part in hs.split("/"))
+    return hs
 
 
 def stat_level(record: dict) -> str:
     hs = record["hs"]
-    if record["id"] == "fertilizer":
-        return "统计口径 HS31"
-    if "/" in hs:
-        return "统计口径 HS6 合并"
-    if len(hs) <= 4:
-        return "统计口径 HS4"
-    return "统计口径 HS6"
+    return "中国 HS8" if len(hs) == 8 else "HS6 国际可比口径"
 
 
 def money_billions(value: float) -> str:
@@ -127,7 +121,7 @@ def parse_records(source: str) -> list[dict]:
             record["stat_level"] = stat_level(record)
             record["proxy"] = "proxy: true" in entry
             records.append(record)
-    return records
+    return [record for record in records if record["id"] not in {"fertilizer", "tunnel", "earthmoving"}]
 
 
 def parse_reports(source: str) -> dict[str, dict]:
@@ -276,14 +270,15 @@ def add_bullets(doc: Document, values: list[str]):
 
 
 def commodity_report_doc(record: dict, report: dict, accuracy: dict) -> Document:
-    title = report.get("title") or f"{record['name']}供应链依赖分析报告"
+    report = {}
+    title = f"{record['name']}对华进口依赖与供应风险分析报告"
     doc = Document()
     style_document(doc, title)
     add_title(doc, title, f"商品：{record['name']} / {record['english']} · 快照 {SNAPSHOT_DATE}")
     add_metadata_table(
         doc,
         [
-            ("HS2022 8位码", record["hs8"]),
+            ("真实统计编码", f"{record['stat_level']} {record['hs8']}"),
             ("统计口径", record["stat_level"]),
             ("2025 自中国进口", money_billions(record["china"])),
             ("2025 全球进口", money_billions(record["world"])),
@@ -298,7 +293,7 @@ def commodity_report_doc(record: dict, report: dict, accuracy: dict) -> Document
     doc.add_heading("二、数据事实", level=1)
     data_points = report.get("data_points") or [
         f"2025 年印度自中国进口 {money_billions(record['china'])}，全球进口 {money_billions(record['world'])}，对华来源占比 {record['share']:.1f}%。",
-        f"页面展示的 HS2022 8 位码为 {record['hs8']}；公开统计金额仍采用 {record['stat_level']}。",
+        f"页面和报告均使用真实的 {record['stat_level']} {record['hs8']}；不补零、不使用父级大类代理金额。",
         f"主要替代供应国或地区包括：{'、'.join(record['alternatives'])}。",
     ]
     add_bullets(doc, data_points)
@@ -332,14 +327,14 @@ def overall_report_doc(records: list[dict]) -> Document:
     doc = Document()
     style_document(doc, "总分析报告")
     add_title(doc, "中国-印度供应链依赖图谱总分析报告", f"重点商品矩阵、化肥专题、工程设备专题与报告下载索引 · 快照 {SNAPSHOT_DATE}")
-    china_total = sum(record["china"] for record in records if len(record["id"].split("_")) == 1)
-    world_total = sum(record["world"] for record in records if len(record["id"].split("_")) == 1)
+    china_total = sum(record["china"] for record in records)
+    world_total = sum(record["world"] for record in records)
     add_metadata_table(
         doc,
         [
             ("报告范围", "重点商品矩阵及可交互子项"),
-            ("分类版本", "HS 2022；页面展示 8 位筛查码"),
-            ("统计边界", "金额按 UN Comtrade 可复核的 HS31、HS4、HS6 单项或合并口径计算"),
+            ("分类版本", "HS 2022；按公开来源最细可核验层级显示真实 HS6/HS8"),
+            ("统计边界", "仅汇总互不重叠的具体商品物项；不使用补零代理或父级大类重复金额"),
             ("加权对华来源占比", f"{china_total / world_total * 100:.1f}%"),
             ("研究日期", REPORT_DATE),
         ],
@@ -352,7 +347,7 @@ def overall_report_doc(records: list[dict]) -> Document:
     table = doc.add_table(rows=1, cols=6)
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
     table.style = "Table Grid"
-    headers = ["商品", "HS8", "统计口径", "自中国进口", "全球进口", "对华占比"]
+    headers = ["具体商品", "统计编码", "统计口径", "从中国进口", "商品进口总额", "从中国进口占比"]
     for index, header in enumerate(headers):
         shade_cell(table.rows[0].cells[index], "F2F4F7")
         set_cell_text(table.rows[0].cells[index], header, True, "1F4D78")
