@@ -84,6 +84,12 @@ main { min-height: 100vh; overflow: hidden; background: radial-gradient(circle a
 .section-heading > div > p { margin: 0 0 12px; color: var(--gold); font: 600 12px var(--font-geist-mono), monospace; letter-spacing: .13em; }
 .section-heading h2 { margin: 0; font: 600 clamp(42px, 4.5vw, 70px)/1.08 "Noto Serif SC", serif; letter-spacing: -.04em; }
 .section-heading > p { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.8; }
+.section-collapse > summary { cursor: pointer; list-style: none; }
+.section-collapse > summary::-webkit-details-marker { display: none; }
+.collapse-heading { grid-template-columns: 1fr auto; margin-bottom: 0; }
+.collapse-heading b { align-self: center; color: var(--teal-bright); font-size: 13px; white-space: nowrap; }
+.section-collapse[open] > .collapse-heading { margin-bottom: 46px; }
+.section-collapse[open] > .collapse-heading b { color: var(--gold-bright); }
 
 .filter-shell { border: 1px solid var(--line-strong); background: var(--panel); box-shadow: 0 30px 80px rgba(0,0,0,.2); }
 .category-tabs { display: flex; overflow-x: auto; border-bottom: 1px solid var(--line); }
@@ -290,6 +296,10 @@ input[type="range"] { width: 100%; accent-color: var(--gold); cursor: pointer; }
 .route-analysis ol { margin: 0; padding-left: 18px; }
 .route-analysis li + li { margin-top: 5px; }
 .route-proof { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+.route-proof summary { display: flex; justify-content: space-between; gap: 16px; align-items: center; cursor: pointer; list-style: none; }
+.route-proof summary::-webkit-details-marker { display: none; }
+.route-proof summary b { color: var(--teal-bright); font-size: 12px; white-space: nowrap; }
+.route-proof[open] summary { margin-bottom: 12px; }
 .route-proof h4 { margin: 0; color: var(--text); font: 600 15px "Noto Serif SC", serif; }
 .route-case { display: grid; grid-template-columns: 1.1fr 2fr auto; gap: 24px; align-items: center; margin-top: 22px; padding: 24px 28px; border: 1px solid var(--gold); background: rgba(203,166,98,.07); }
 .route-case span { color: var(--gold-bright); font: 700 11px var(--mono); letter-spacing: .14em; }
