@@ -10,7 +10,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "smoke": "tsc -b --pretty false",
+    "smoke": "node scripts/audit-battery-customs.mjs && tsc -b --pretty false",
     "typecheck": "tsc -b"
   },
   "dependencies": {
