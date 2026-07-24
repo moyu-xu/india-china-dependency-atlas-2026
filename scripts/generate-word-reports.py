@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import argparse
+import json
 import re
 import shutil
 from pathlib import Path
@@ -18,6 +20,7 @@ OUT_DIR = ROOT / "public" / "reports"
 REPORT_DATE = "2026-07-23"
 SNAPSHOT_DATE = "2026-07-23"
 COMTRADE = "UN Comtrade 2025 / monthly API, HS 2022 (H6)"
+BATTERY_CUSTOMS = json.loads((ROOT / "src" / "data" / "batteryChinaCustoms.json").read_text(encoding="utf-8"))
 TABLE_WIDTH_DXA = 9360
 TABLE_INDENT_DXA = 120
 
@@ -95,6 +98,10 @@ def money_billions(value: float) -> str:
     if value >= 1:
         return f"{value:.2f} 十亿美元"
     return f"{value * 1000:.1f} 百万美元"
+
+
+def rmb_billions(value: int) -> str:
+    return f"{value / 1_000_000_000:.2f} 十亿元人民币"
 
 
 def parse_records(source: str) -> list[dict]:
@@ -373,6 +380,37 @@ def commodity_report_doc(record: dict, report: dict, accuracy: dict) -> Document
     for paragraph in analysis:
         doc.add_paragraph(paragraph)
 
+    if record["id"] == "battery":
+        customs = BATTERY_CUSTOMS
+        doc.add_heading("中国海关 HS8 出口镜像数据（2025）", level=2)
+        doc.add_paragraph(
+            f"用户提供的中国海关明细包含 {customs['annual']['rows']} 行记录，"
+            f"口径为中国出口至印度、HS8 {customs['hs8']}、2025 年1—12月。"
+            f"各月明细汇总为 {rmb_billions(customs['annual']['rmb'])}、"
+            f"{customs['annual']['units']:,} 个和 {customs['annual']['kg']:,} 千克；12 个月合计与年度汇总一致。"
+        )
+        doc.add_paragraph(
+            "该数据是中国出口镜像口径，币种为人民币；不直接替代印度报告的 CIF 进口额、"
+            "印度全球进口额或对华来源占比。它用于验证月度方向、数量与贸易方式结构。"
+        )
+        table = doc.add_table(rows=1, cols=4)
+        table.alignment = WD_TABLE_ALIGNMENT.CENTER
+        table.style = "Table Grid"
+        for index, header in enumerate(["月份", "出口额（人民币）", "第一数量（个）", "第二数量（千克）"]):
+            shade_cell(table.rows[0].cells[index], "F2F4F7")
+            set_cell_text(table.rows[0].cells[index], header, True, "1F4D78")
+        repeat_table_header(table.rows[0])
+        for point in customs["months"]:
+            row = table.add_row().cells
+            values = [point["period"], rmb_billions(point["rmb"]), f"{point['units']:,}", f"{point['kg']:,}"]
+            for index, value in enumerate(values):
+                set_cell_text(row[index], value)
+        set_table_geometry(table, [1200, 2200, 2880, 3080])
+        doc.add_paragraph(
+            "结构补充：一般贸易占 78.31%，进料加工贸易占 19.50%；"
+            "2025 年12月出口额为 41.56 亿元，为年内最高值。"
+        )
+
     doc.add_heading("四、第三国路径与判读边界", level=1)
     doc.add_paragraph(
         f"当前未取得与 HS6 {record['hs']} 完全同口径且能够对应同一批货物的逐段单证闭环。"
@@ -404,6 +442,12 @@ def commodity_report_doc(record: dict, report: dict, accuracy: dict) -> Document
         "印度 DGCI&S TradeStat：月度贸易数据库与编码调整说明。",
         "中国商务部、海关总署及中国出口管制信息网：现行两用物项清单、公告与许可证管理目录。",
     ]
+    if record["id"] == "battery":
+        references.append(
+            f"{BATTERY_CUSTOMS['sourceLabel']}（{BATTERY_CUSTOMS['sourceFile']}）："
+            f"HS8 {BATTERY_CUSTOMS['hs8']}、{BATTERY_CUSTOMS['flow']}、{BATTERY_CUSTOMS['period']}，"
+            f"币种人民币；访问 {BATTERY_CUSTOMS['accessedAt']}。"
+        )
     add_bullets(doc, references)
     doc.add_paragraph("注：本报告用于公开来源研究和合规初筛，不构成法律意见或个案事实认定。")
     return doc
@@ -475,22 +519,32 @@ def overall_report_doc(records: list[dict]) -> Document:
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Generate website Word reports")
+    parser.add_argument("--only", action="append", choices=["overall", "battery"], help="Regenerate only the selected report")
+    args = parser.parse_args()
     source = APP.read_text(encoding="utf-8")
     records = parse_records(source)
     reports = parse_reports(source)
     accuracy = parse_accuracy(source)
-    if OUT_DIR.exists():
+    selected = set(args.only or [])
+    if not selected and OUT_DIR.exists():
         shutil.rmtree(OUT_DIR)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    overall = overall_report_doc(records)
-    overall.save(OUT_DIR / "overall.docx")
+    generated = 0
+    if not selected or "overall" in selected:
+        overall = overall_report_doc(records)
+        overall.save(OUT_DIR / "overall.docx")
+        generated += 1
 
     for record in records:
+        if selected and record["id"] not in selected:
+            continue
         doc = commodity_report_doc(record, reports.get(record["id"], {}), accuracy.get(record["id"], {}))
         doc.save(OUT_DIR / f"{record['id']}.docx")
+        generated += 1
 
-    print(f"Generated {len(records) + 1} Word reports in {OUT_DIR}")
+    print(f"Generated {generated} Word report(s) in {OUT_DIR}")
 
 
 if __name__ == "__main__":
