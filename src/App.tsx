@@ -71,6 +71,8 @@ export type ControlRecord = {
 };
 
 type CustomsAnnual = { usd: number; rows: number; firstQty: number; secondQty: number };
+type RouteCoverage = "2023→2024" | "2025→2026 YTD";
+type RoutePair = [number, number | null];
 type CustomsMonth = { period: string; usd: number; rows: number; firstQty: number; secondQty: number };
 type CustomsTradeMode = { code: string; name: string; usd: number; rows: number; months: CustomsMonth[] };
 type CustomsHs8Code = {
@@ -105,11 +107,11 @@ export type RouteSignal = {
   hs: string;
   hub: string;
   nodes: string[];
-  coverage: "2023→2024";
-  cnToHub: [number, number];
-  hubToIndia: [number, number];
-  legs?: { label: string; values: [number, number] }[];
-  directToIndia: [number, number];
+  coverage: RouteCoverage;
+  cnToHub: RoutePair;
+  hubToIndia: RoutePair;
+  legs?: { label: string; values: RoutePair }[];
+  directToIndia: RoutePair;
   reliability: "高" | "中" | "低";
   evidence: string;
   methodSteps: string[];
@@ -124,9 +126,9 @@ export type RouteNetworkSignal = {
   product: string;
   hs: string;
   nodes: string[];
-  coverage: "2023→2024";
-  legs: { label: string; values: [number, number] }[];
-  directToIndia: [number, number];
+  coverage: RouteCoverage;
+  legs: { label: string; values: RoutePair }[];
+  directToIndia: RoutePair;
   reliability: "高" | "中" | "低";
   evidence: string;
   methodSteps: string[];
@@ -580,118 +582,118 @@ const controls: ControlRecord[] = [
 
 const routes: RouteSignal[] = [
   {
-    id:"id-pvcell", product:"未组装光伏电池", hs:"854142", hub:"印度尼西亚", nodes:["中国","印度尼西亚","印度"], coverage:"2023→2024",
-    cnToHub:[19.656345,175.519286], hubToIndia:[1.354986,21.707434], directToIndia:[980.804246,1228.039774], reliability:"中",
-    evidence:"同一 HS2022 六位物项下，中国申报出口至印尼由 1,965.6 万美元增至 1.755 亿美元；印尼申报出口至印度由 135.5 万美元增至 2,170.7 万美元。",
-    methodSteps:["锁定真实 HS6 854142，不与光伏组件或其他半导体合并。","分别读取中国出口—印尼、印尼出口—印度两段报告国数据。","两段分别增长 793% 和 1,502%，再以印度自中国进口增长 25% 作为对照。"],
-    inference:"两段规模与增幅均较显著，印尼应列为光伏电池原产地、加工工序和提单穿透的优先核验国；这仍是统计筛查，不是同批货物证明。",
+    id:"id-pvcell", product:"未组装光伏电池", hs:"854142", hub:"印度尼西亚", nodes:["中国","印度尼西亚","印度"], coverage:"2025→2026 YTD",
+    cnToHub:[69.480670,59.756316], hubToIndia:[372.239261,711.284286], directToIndia:[1989.338056,303.786458], reliability:"中",
+    evidence:"同一 HS2022 六位物项下，印尼报告自中国进口 2025 全年为 6,948.1 万美元，2026 年已公布月份为 5,975.6 万美元；印尼报告出口至印度由 2025 全年 3.722 亿美元，到 2026 已公布月份已达 7.113 亿美元。",
+    methodSteps:["锁定真实 HS6 854142，不与光伏组件或其他半导体合并。","用印尼报告自中国进口作为中国→印尼镜像口径，用印尼报告对印度出口作为印尼→印度口径。","将 2026 已公布月份与 2025 全年对照，并以印度自中国进口 2026 已公布值作为直接流参照。"],
+    inference:"印尼在 2026 已公布月份的对印出口已经超过 2025 全年，且自中国进口也保持较大规模，应列为光伏电池原产地、加工工序和提单穿透的优先核验国；这仍是统计筛查，不是同批货物证明。",
     caveat:"印尼具有本地光伏制造与贸易活动；两段增长可能对应不同企业、不同电池规格或真实加工。",
-    sourceDetail:"UN Comtrade 公共 API；中国报告出口、印尼报告出口、印度报告进口；HS2022 H6 854142；年度 2023、2024；访问 2026-07-23。", source:COMTRADE
+    sourceDetail:"UN Comtrade 公共 API；印尼报告进口、印尼报告出口、印度报告进口；HS2022 H6 854142；2025 全年与 2026 已公布月份；访问 2026-07-24。", source:COMTRADE
   },
   {
-    id:"my-processor", product:"处理器及控制器集成电路", hs:"854231", hub:"马来西亚", nodes:["中国","马来西亚","印度"], coverage:"2023→2024",
-    cnToHub:[3336.418901,4393.731309], hubToIndia:[366.053511,459.852821], directToIndia:[5389.251948,5325.437801], reliability:"中",
-    evidence:"中国→马来西亚由 33.364 亿美元增至 43.937 亿美元；马来西亚→印度由 3.661 亿美元增至 4.599 亿美元；印度自中国直接进口同期下降 1.2%。",
-    methodSteps:["使用 HS6 854231，排除存储器、放大器和其他集成电路。","核对两段报告国出口金额及同一年度变化。","观察到两段分别增长 31.7% 和 25.6%，同时直接流略降，因此进入优先核验池。"],
+    id:"my-processor", product:"处理器及控制器集成电路", hs:"854231", hub:"马来西亚", nodes:["中国","马来西亚","印度"], coverage:"2025→2026 YTD",
+    cnToHub:[1563.262303,497.154359], hubToIndia:[361.499386,157.315541], directToIndia:[5059.862022,1349.703646], reliability:"中",
+    evidence:"马来西亚报告自中国进口 2025 全年为 15.633 亿美元，2026 年已公布月份为 4.972 亿美元；马来西亚报告出口至印度 2025 全年为 3.615 亿美元，2026 年已公布月份为 1.573 亿美元。",
+    methodSteps:["使用 HS6 854231，排除存储器、放大器和其他集成电路。","用马来西亚自中国进口与马来西亚对印度出口构造两段镜像链。","2026 已公布月份已分别达到 2025 全年的 32% 和 44%，且金额绝对规模较高，因此进入优先核验池。"],
     inference:"马来西亚是成熟半导体制造、封测与分拨节点；应穿透晶圆来源、封装测试工序和原产地规则，不能把区域分工直接称为转口。",
     caveat:"集成电路在马来西亚可能发生足以改变原产地判断的实质加工；聚合金额无法追踪同一芯片。",
-    sourceDetail:"UN Comtrade 公共 API；中国报告出口、马来西亚报告出口、印度报告进口；HS2022 H6 854231；年度 2023、2024；访问 2026-07-23。", source:COMTRADE
+    sourceDetail:"UN Comtrade 公共 API；马来西亚报告进口、马来西亚报告出口、印度报告进口；HS2022 H6 854231；2025 全年与 2026 已公布月份；访问 2026-07-24。", source:COMTRADE
   },
   {
-    id:"sg-selfpropelled", product:"自推进采煤机、截岩机及隧道掘进机械", hs:"843031", hub:"新加坡", nodes:["中国","新加坡","印度"], coverage:"2023→2024",
-    cnToHub:[18.994804,127.502664], hubToIndia:[0,8.279193], directToIndia:[36.043547,10.303739], reliability:"中",
-    evidence:"中国→新加坡由 1,899.5 万美元增至 1.275 亿美元；新加坡→印度由零增至 827.9 万美元；印度自中国直接进口下降 71.4%。",
-    methodSteps:["按法定 HS6 843031 统计，不把金额直接命名为盾构机成交额。","逐段比较中国报告出口与新加坡报告出口。","第二段为新增且直接流下降，故列入核验；再用型号、序列号和项目交付信息区分盾构机与其他设备。"],
-    inference:"新加坡是该掘进机械税号下值得核验的贸易节点，尤其需要核查设备序列号、装运港、工法与是否发生翻新或实质加工。",
+    id:"sg-selfpropelled", product:"自推进采煤机、截岩机及隧道掘进机械", hs:"843031", hub:"新加坡", nodes:["中国","新加坡","印度"], coverage:"2025→2026 YTD",
+    cnToHub:[62.119546,0], hubToIndia:[10.008576,0], directToIndia:[40.596479,64.898955], reliability:"低",
+    evidence:"新加坡报告自中国进口 2025 全年为 6,212.0 万美元；2026 已公布月份暂未观察到同口径记录。新加坡对印度出口 2025 全年为 1,000.9 万美元；2026 已公布月份暂未观察到同口径记录。",
+    methodSteps:["按法定 HS6 843031 统计，不把金额直接命名为盾构机成交额。","逐段读取新加坡自中国进口和新加坡对印度出口。","2026 已公布月份未形成连续金额，因此仅保留为低可靠历史基准和单证核验线索。"],
+    inference:"新加坡仍可作为该掘进机械税号下的贸易节点核验对象，但 2026 已公布数据尚未支持新的路径信号；需要核查设备序列号、装运港、工法与是否发生翻新或实质加工。",
     caveat:"HS 843031 同时包含采煤机、截岩机和隧道掘进机械，无法单凭贸易额识别盾构机或确认同一设备。",
-    sourceDetail:"UN Comtrade 公共 API；中国报告出口、新加坡报告出口、印度报告进口；HS2022 H6 843031；年度 2023、2024；访问 2026-07-23。", source:COMTRADE
+    sourceDetail:"UN Comtrade 公共 API；新加坡报告进口、新加坡报告出口、印度报告进口；HS2022 H6 843031；2025 全年与 2026 已公布月份；访问 2026-07-24。", source:COMTRADE
   },
   {
-    id:"id-battery", product:"锂离子蓄电池", hs:"850760", hub:"印度尼西亚", nodes:["中国","印度尼西亚","印度"], coverage:"2023→2024",
-    cnToHub:[364.826222,439.934833], hubToIndia:[0.250891,19.510546], directToIndia:[2790.259919,2553.179921], reliability:"中",
-    evidence:"中国→印尼由 3.648 亿美元增至 4.399 亿美元；印尼→印度由 25.1 万美元增至 1,951.1 万美元；印度自中国直接进口下降 8.5%。",
-    methodSteps:["锁定锂离子蓄电池 HS6 850760。","以中国、印尼各自报告的出口统计构造两段，不使用印度尼西亚全球贸易总额替代。","第一段增长 20.6%、第二段增长 7,676%，并与直接流下降对照，形成中等可靠筛查信号。"],
-    inference:"印尼节点值得核查电芯、模组与 PACK 的生产工序、BOM 和原产地转换；第二段增长很快，但不能视为中国货物等额转运。",
+    id:"id-battery", product:"锂离子蓄电池", hs:"850760", hub:"印度尼西亚", nodes:["中国","印度尼西亚","印度"], coverage:"2025→2026 YTD",
+    cnToHub:[477.906124,265.875797], hubToIndia:[54.637520,15.772564], directToIndia:[3807.624325,1388.493729], reliability:"中",
+    evidence:"印尼报告自中国进口 2025 全年为 4.779 亿美元，2026 已公布月份为 2.659 亿美元；印尼报告出口至印度 2025 全年为 5,463.8 万美元，2026 已公布月份为 1,577.3 万美元。",
+    methodSteps:["锁定锂离子蓄电池 HS6 850760。","以印尼自中国进口和印尼对印度出口构造镜像两段，不使用印度尼西亚全球贸易总额替代。","2026 已公布月份前段已达 2025 全年的 56%，后段达 29%，因此保留为中等可靠筛查信号。"],
+    inference:"印尼节点值得核查电芯、模组与 PACK 的生产工序、BOM 和原产地转换；两段规模可观察，但不能视为中国货物等额转运。",
     caveat:"印尼正在扩展本地电池产业，且电池可能发生实质加工；低基数会放大第二段增幅。",
-    sourceDetail:"UN Comtrade 公共 API；中国报告出口、印尼报告出口、印度报告进口；HS2022 H6 850760；年度 2023、2024；访问 2026-07-23。", source:COMTRADE
+    sourceDetail:"UN Comtrade 公共 API；印尼报告进口、印尼报告出口、印度报告进口；HS2022 H6 850760；2025 全年与 2026 已公布月份；访问 2026-07-24。", source:COMTRADE
   },
   {
-    id:"ph-converter", product:"静止式变流器", hs:"850440", hub:"菲律宾", nodes:["中国","菲律宾","印度"], coverage:"2023→2024",
-    cnToHub:[252.375542,335.053506], hubToIndia:[8.437208,10.172091], directToIndia:[1012.127009,1201.237512], reliability:"低",
-    evidence:"中国→菲律宾由 2.524 亿美元增至 3.351 亿美元；菲律宾→印度由 843.7 万美元增至 1,017.2 万美元；印度自中国直接进口也增长 18.7%。",
-    methodSteps:["锁定静止式变流器 HS6 850440。","分别采用中国与菲律宾报告的双边出口数据，不用全球出口额替代第二段。","两段分别增长 32.8% 和 20.6%；因直接流同步增长，保留为低可靠核验信号。"],
+    id:"ph-converter", product:"静止式变流器", hs:"850440", hub:"菲律宾", nodes:["中国","菲律宾","印度"], coverage:"2025→2026 YTD",
+    cnToHub:[292.687367,75.651645], hubToIndia:[9.137651,2.964518], directToIndia:[1358.498017,413.077983], reliability:"低",
+    evidence:"菲律宾报告自中国进口 2025 全年为 2.927 亿美元，2026 已公布月份为 7,565.2 万美元；菲律宾报告出口至印度 2025 全年为 913.8 万美元，2026 已公布月份为 296.5 万美元。",
+    methodSteps:["锁定静止式变流器 HS6 850440。","分别采用菲律宾自中国进口和菲律宾对印度出口数据，不用全球出口额替代第二段。","2026 已公布月份两段分别达到 2025 全年的 26% 和 32%；因直接流规模仍较高，保留为低可靠核验信号。"],
     inference:"菲律宾可作为电源电子制造、组装与分拨网络的核验节点，应结合产品型号、制造工序、BOM 和原产地规则判断。",
     caveat:"菲律宾具有真实电子制造能力，两段可能对应不同型号或经过实质加工；同步增长不能估算转运额。",
-    sourceDetail:"UN Comtrade 公共 API；中国报告出口、菲律宾报告出口、印度报告进口；HS2022 H6 850440；年度 2023、2024；访问 2026-07-23。", source:COMTRADE
+    sourceDetail:"UN Comtrade 公共 API；菲律宾报告进口、菲律宾报告出口、印度报告进口；HS2022 H6 850440；2025 全年与 2026 已公布月份；访问 2026-07-24。", source:COMTRADE
   },
   {
-    id:"th-pet", product:"高黏度聚对苯二甲酸乙二酯", hs:"390761", hub:"泰国", nodes:["中国","泰国","印度"], coverage:"2023→2024",
-    cnToHub:[56.583678,75.022406], hubToIndia:[2.309836,6.166259], directToIndia:[96.917490,145.881270], reliability:"低",
-    evidence:"中国→泰国由 5,658.4 万美元增至 7,502.2 万美元；泰国→印度由 231.0 万美元增至 616.6 万美元；直接流也增长 50.5%。",
-    methodSteps:["限定为 HS6 390761 的高黏度 PET。","两段分别增长 32.6% 和 167%。","由于中国→印度直接流同步大幅增长，无法用替代关系强化判断，故可靠性降为低。"],
+    id:"th-pet", product:"高黏度聚对苯二甲酸乙二酯", hs:"390761", hub:"泰国", nodes:["中国","泰国","印度"], coverage:"2025→2026 YTD",
+    cnToHub:[0,50.843864], hubToIndia:[0,7.620387], directToIndia:[161.605635,21.334169], reliability:"低",
+    evidence:"泰国报告自中国进口和泰国对印度出口在 2026 已公布月份均出现记录，分别为 5,084.4 万美元和 762.0 万美元；同口径 2025 全年基准在公开汇总中未形成可用记录。",
+    methodSteps:["限定为 HS6 390761 的高黏度 PET。","读取泰国自中国进口与泰国对印度出口两段月度记录。","由于 2025 年基准缺失，不能计算可比比例，仅作为新增观察线索。"],
     inference:"泰国可作为产能、贸易商和原产地规则核验节点，但现有数据更可能同时包含产业扩张和需求增长。",
     caveat:"价格、产能扩张、库存和真实泰国产品均可造成同步上升；不能推算转口比例。",
-    sourceDetail:"UN Comtrade 公共 API；中国报告出口、泰国报告出口、印度报告进口；HS2022 H6 390761；年度 2023、2024；访问 2026-07-23。", source:COMTRADE
+    sourceDetail:"UN Comtrade 公共 API；泰国报告进口、泰国报告出口、印度报告进口；HS2022 H6 390761；2025 全年与 2026 已公布月份；访问 2026-07-24。", source:COMTRADE
   },
   {
-    id:"my-graphite", product:"粉末或鳞片状天然石墨", hs:"250410", hub:"马来西亚", nodes:["中国","马来西亚","印度"], coverage:"2023→2024",
-    cnToHub:[0.402332,0.622341], hubToIndia:[0.002681,0.240458], directToIndia:[14.948163,4.408276], reliability:"低",
-    evidence:"中国→马来西亚由 40.2 万美元增至 62.2 万美元；马来西亚→印度由 0.27 万美元增至 24.0 万美元；印度自中国直接进口下降 70.5%。",
-    methodSteps:["使用真实 HS6 250410，不用 HS4 2504 总项。","复核两段年度金额及直接流。","方向吻合但第二段绝对额仅 24 万美元，且技术参数不可见，因此仅列低可靠弱信号。"],
+    id:"my-graphite", product:"粉末或鳞片状天然石墨", hs:"250410", hub:"马来西亚", nodes:["中国","马来西亚","印度"], coverage:"2025→2026 YTD",
+    cnToHub:[0.524297,0.057915], hubToIndia:[0.098340,0], directToIndia:[3.700898,0.550826], reliability:"低",
+    evidence:"马来西亚报告自中国进口 2025 全年为 52.4 万美元，2026 已公布月份为 5.8 万美元；马来西亚对印度出口 2025 全年为 9.8 万美元，2026 已公布月份暂未观察到记录。",
+    methodSteps:["使用真实 HS6 250410，不用 HS4 2504 总项。","复核马来西亚自中国进口、马来西亚对印度出口及印度自中国进口直接流。","由于 2026 末端对印段缺失，仅列为低可靠弱信号。"],
     inference:"适合优先核对纯度、粒径、球形化、原产地证书和加工记录；不应把 HS6 全部金额视为受控石墨。",
     caveat:"金额很小且低基数导致增幅失真；HS6 不能识别出口管制技术参数。",
-    sourceDetail:"UN Comtrade 公共 API；中国报告出口、马来西亚报告出口、印度报告进口；HS2022 H6 250410；年度 2023、2024；访问 2026-07-23。", source:COMTRADE
+    sourceDetail:"UN Comtrade 公共 API；马来西亚报告进口、马来西亚报告出口、印度报告进口；HS2022 H6 250410；2025 全年与 2026 已公布月份；访问 2026-07-24。", source:COMTRADE
   },
   {
-    id:"sg-otherboring", product:"其他采煤机、截岩机及隧道掘进机械", hs:"843039", hub:"新加坡", nodes:["中国","新加坡","印度"], coverage:"2023→2024",
-    cnToHub:[0.306673,1.171843], hubToIndia:[0.162613,0.373971], directToIndia:[0.591917,0.153256], reliability:"低",
-    evidence:"中国→新加坡由 30.7 万美元增至 117.2 万美元；新加坡→印度由 16.3 万美元增至 37.4 万美元；印度自中国直接进口下降 74.1%。",
-    methodSteps:["限定为 HS6 843039。","两段分别增长 282% 和 130%，并与直接流下降对照。","由于金额小且商品构成复杂，保留为低可靠性单证核验线索。"],
+    id:"sg-otherboring", product:"其他采煤机、截岩机及隧道掘进机械", hs:"843039", hub:"新加坡", nodes:["中国","新加坡","印度"], coverage:"2025→2026 YTD",
+    cnToHub:[1.797099,0], hubToIndia:[0.091329,0], directToIndia:[1.891874,0.530416], reliability:"低",
+    evidence:"新加坡报告自中国进口 2025 全年为 179.7 万美元，新加坡对印度出口 2025 全年为 9.1 万美元；2026 已公布月份两段均暂未观察到记录。",
+    methodSteps:["限定为 HS6 843039。","复核新加坡自中国进口、新加坡对印度出口和印度自中国进口直接流。","2026 已公布月份未形成连续金额，因此仅保留为低可靠性单证核验线索。"],
     inference:"新加坡值得在项目交付期核对设备名称、序列号、净重和装运文件，但不足以证明盾构机经新加坡进入印度。",
     caveat:"税号涵盖多类非自推进掘进设备，低金额、高件数或零配件会造成显著杂质。",
-    sourceDetail:"UN Comtrade 公共 API；中国报告出口、新加坡报告出口、印度报告进口；HS2022 H6 843039；年度 2023、2024；访问 2026-07-23。", source:COMTRADE
+    sourceDetail:"UN Comtrade 公共 API；新加坡报告进口、新加坡报告出口、印度报告进口；HS2022 H6 843039；2025 全年与 2026 已公布月份；访问 2026-07-24。", source:COMTRADE
   },
 ];
 
 const routeNetworks: RouteNetworkSignal[] = [
   {
-    id:"ic-hk-my", product:"处理器及控制器集成电路", hs:"854231", nodes:["中国","中国香港","马来西亚","印度"], coverage:"2023→2024",
+    id:"ic-hk-my", product:"处理器及控制器集成电路", hs:"854231", nodes:["中国","中国香港","马来西亚","印度"], coverage:"2025→2026 YTD",
     legs:[
-      {label:"中国→中国香港",values:[22806.298472,27807.267401]},
-      {label:"中国香港→马来西亚",values:[558.916064,831.739842]},
-      {label:"马来西亚→印度",values:[366.053511,459.852821]},
-    ], directToIndia:[5389.251948,5325.437801], reliability:"中",
-    evidence:"同一 HS6 下三段分别增长 21.9%、48.8% 和 25.6%，各段 2024 年金额均超过 4.5 亿美元；印度自中国直接进口同期下降 1.2%。",
-    methodSteps:["锁定 HS2022 H6 854231。","分别采用中国、中国香港、马来西亚三个报告方的双边出口统计构造三段。","以印度报告的中国直接进口作对照；三段同步增长且直接流略降，进入中等可靠多节点核验池。"],
+      {label:"中国→中国香港",values:[33501.936043,14129.389594]},
+      {label:"中国香港→马来西亚",values:[858.451033,500.878857]},
+      {label:"马来西亚→印度",values:[361.499386,157.315541]},
+    ], directToIndia:[5059.862022,1349.703646], reliability:"中",
+    evidence:"同一 HS6 下，2026 已公布月份中国香港自中国进口已达 2025 全年的 42%，中国香港对马来西亚出口已达 58%，马来西亚对印度出口已达 44%；各段金额均较大。",
+    methodSteps:["锁定 HS2022 H6 854231。","第一段使用中国香港自中国进口镜像口径，后两段使用报告方出口口径。","以印度报告的中国直接进口作对照；多段金额同时存在且规模较高，进入中等可靠多节点核验池。"],
     inference:"该路径反映东亚半导体制造、封测和分拨网络的显著重叠，适合按晶圆来源、封装测试工序、原产地规则和提单做穿透核验。",
     caveat:"三段聚合金额不是同一芯片闭环；中国香港与马来西亚均可能发生贸易分拨或实质加工，不能据此认定连续转口。",
-    sourceDetail:"UN Comtrade 公共 API；中国、中国香港、马来西亚分别报告各段出口，印度报告直接进口；HS2022 H6 854231；年度 2023、2024；访问 2026-07-23。", source:COMTRADE
+    sourceDetail:"UN Comtrade 公共 API；中国香港报告进口、中国香港报告出口、马来西亚报告出口、印度报告进口；HS2022 H6 854231；2025 全年与 2026 已公布月份；访问 2026-07-24。", source:COMTRADE
   },
   {
-    id:"valve-id-th", product:"其他龙头、旋塞及类似装置", hs:"848180", nodes:["中国","印度尼西亚","泰国","印度"], coverage:"2023→2024",
+    id:"valve-id-th", product:"其他龙头、旋塞及类似装置", hs:"848180", nodes:["中国","印度尼西亚","泰国","印度"], coverage:"2025→2026 YTD",
     legs:[
-      {label:"中国→印度尼西亚",values:[417.280284,505.515308]},
-      {label:"印度尼西亚→泰国",values:[12.948912,34.904755]},
-      {label:"泰国→印度",values:[36.793318,46.500106]},
-    ], directToIndia:[273.684157,294.086949], reliability:"低",
-    evidence:"同一 HS6 三段分别增长 21.1%、169.6% 和 26.4%，其中最小一段 2024 年为 3,490.5 万美元；直接流也增长 7.5%。",
-    methodSteps:["限定为 HS2022 H6 848180。","用中国、印尼、泰国各自报告的双边出口数据构造三段。","三段同步增长，但直接流亦增长且该税号商品构成宽，因此可靠性定为低。"],
+      {label:"中国→印度尼西亚",values:[513.853659,249.845095]},
+      {label:"印度尼西亚→泰国",values:[32.199809,12.179859]},
+      {label:"泰国→印度",values:[0,20.928315]},
+    ], directToIndia:[335.823903,84.020139], reliability:"低",
+    evidence:"同一 HS6 下，印尼自中国进口 2026 已公布月份达到 2025 全年的 49%，印尼对泰国出口达到 38%；泰国对印度出口在 2026 已公布月份出现 2,092.8 万美元记录。",
+    methodSteps:["限定为 HS2022 H6 848180。","第一段使用印尼自中国进口镜像口径，后两段使用印尼、泰国报告出口。","该税号商品构成宽、第三段 2025 基准缺失，因此可靠性定为低。"],
     inference:"可用于筛查区域阀门供应链中的贸易商、生产工序与原产地变化，优先核对制造商、材质、用途和订单对应关系。",
     caveat:"HS 848180 覆盖多类阀门装置；三段可能来自不同产品、企业或真实区域生产，不能估算连续转运规模。",
-    sourceDetail:"UN Comtrade 公共 API；中国、印度尼西亚、泰国分别报告各段出口，印度报告直接进口；HS2022 H6 848180；年度 2023、2024；访问 2026-07-23。", source:COMTRADE
+    sourceDetail:"UN Comtrade 公共 API；印尼报告进口、印尼报告出口、泰国报告出口、印度报告进口；HS2022 H6 848180；2025 全年与 2026 已公布月份；访问 2026-07-24。", source:COMTRADE
   },
   {
-    id:"pet-id-th", product:"高黏度聚对苯二甲酸乙二酯", hs:"390761", nodes:["中国","印度尼西亚","泰国","印度"], coverage:"2023→2024",
+    id:"pet-id-th", product:"高黏度聚对苯二甲酸乙二酯", hs:"390761", nodes:["中国","印度尼西亚","泰国","印度"], coverage:"2025→2026 YTD",
     legs:[
-      {label:"中国→印度尼西亚",values:[142.545867,239.250456]},
-      {label:"印度尼西亚→泰国",values:[1.135521,4.038136]},
-      {label:"泰国→印度",values:[2.309836,6.166259]},
-    ], directToIndia:[96.917490,145.881270], reliability:"低",
-    evidence:"同一 HS6 三段分别增长 67.8%、255.6% 和 167.0%；最小一段 2024 年约 403.8 万美元，但印度自中国直接进口也增长 50.5%。",
-    methodSteps:["限定为高黏度 PET 的 HS2022 H6 390761。","逐段采用中国、印尼、泰国报告的双边出口统计。","三段同步增长形成候选，但直接流同步大增，无法支持替代关系，故只列低可靠核验网络。"],
+      {label:"中国→印度尼西亚",values:[347.199987,172.944813]},
+      {label:"印度尼西亚→泰国",values:[5.491722,0.365670]},
+      {label:"泰国→印度",values:[0,7.620387]},
+    ], directToIndia:[161.605635,21.334169], reliability:"低",
+    evidence:"同一 HS6 下，印尼自中国进口 2026 已公布月份达到 2025 全年的 50%，印尼对泰国出口达到 7%；泰国对印度出口在 2026 已公布月份出现 762.0 万美元记录。",
+    methodSteps:["限定为高黏度 PET 的 HS2022 H6 390761。","第一段使用印尼自中国进口镜像口径，后两段使用印尼、泰国报告出口。","第三段 2025 基准缺失，且直接流仍存在，因此只列低可靠核验网络。"],
     inference:"该网络更可能同时反映区域产能、贸易和需求扩张；可结合生产商、批次、黏度指标和原产地证书继续核验。",
     caveat:"价格和产能变化会显著影响金额，聚合数据无法证明同一批树脂连续经过两国。",
-    sourceDetail:"UN Comtrade 公共 API；中国、印度尼西亚、泰国分别报告各段出口，印度报告直接进口；HS2022 H6 390761；年度 2023、2024；访问 2026-07-23。", source:COMTRADE
+    sourceDetail:"UN Comtrade 公共 API；印尼报告进口、印尼报告出口、泰国报告出口、印度报告进口；HS2022 H6 390761；2025 全年与 2026 已公布月份；访问 2026-07-24。", source:COMTRADE
   },
 ];
 const auditedRoutes = routes;
@@ -719,14 +721,17 @@ const policies = [
 
 const formatB = (v:number) => v >= 1 ? `$${v.toFixed(v >= 10 ? 1 : 2)}B` : `$${(v*1000).toFixed(v < .01 ? 1 : 0)}M`;
 const formatM = (v:number) => v >= 1 ? `$${v.toFixed(v >= 10 ? 1 : 2)}M` : `$${(v*1000).toFixed(0)}K`;
+const formatRouteValue = (v:number | null) => v === null ? "未发布" : formatM(v);
 const growth = (a:number,b:number) => b === 0 ? (a > 0 ? Infinity : 0) : (a-b)/b*100;
 const signed = (v:number) => Number.isFinite(v) ? `${v >= 0 ? "+" : ""}${v.toFixed(0)}%` : "新增";
 const routeLegs = (route:RouteSignal) => route.legs ?? [
   { label:"中国→第三国", values:route.cnToHub },
   { label:"第三国→印度", values:route.hubToIndia },
 ];
-const weakestRouteValue = (route:RouteSignal) => Math.min(...routeLegs(route).map(leg=>leg.values[1]));
-const weakestRouteGrowth = (route:RouteSignal) => Math.min(...routeLegs(route).map(leg=>growth(leg.values[1],leg.values[0])));
+const routeYtdRatio = ([base, current]:RoutePair) => current === null ? 0 : base === 0 ? (current > 0 ? Infinity : 0) : current / base * 100;
+const routeComparisonLabel = (values:RoutePair) => values[1] === null ? "未发布" : values[0] === 0 ? (values[1] > 0 ? "新增" : "—") : `达2025全年 ${routeYtdRatio(values).toFixed(0)}%`;
+const weakestRouteValue = (route:RouteSignal) => Math.min(...routeLegs(route).map(leg=>leg.values[1] ?? 0));
+const weakestRouteGrowth = (route:RouteSignal) => Math.min(...routeLegs(route).map(leg=>routeYtdRatio(leg.values)));
 type RouteProofRecord = Pick<RouteSignal,"id"|"evidence"|"methodSteps"|"inference"|"sourceDetail"|"caveat">;
 function RouteProof({ route }: { route: RouteProofRecord }) {
   return <details className="route-proof"><summary><h4>推演判断过程与数据来源</h4><b>展开 ↕</b></summary><dl className="route-analysis"><div><dt>公开数据</dt><dd>{route.evidence}</dd></div><div><dt>判断步骤</dt><dd><ol>{route.methodSteps.map((step,index)=><li key={`${route.id}-step-${index}`}>{step}</li>)}</ol></dd></div><div><dt>推演结论</dt><dd>{route.inference}</dd></div><div><dt>数据来源</dt><dd>{route.sourceDetail}</dd></div><div><dt>限制</dt><dd>{route.caveat}</dd></div></dl></details>;
@@ -1087,16 +1092,16 @@ export default function Home() {
 
     <section className="section route-section" id="routes">
       <div className="section-heading inverse"><div><p>ROUTE SIGNALS / SCREENING ONLY</p><h2>可能的第三国路径</h2></div><p>以同一真实 HS6 的逐段报告国数据筛查“中国→第三国→印度”，同时展示直接流作为对照。HS8 仅在各国本国口径可对应时用于单证核验；统计信号不认定实际转口或违法。</p></div>
-      <div className="route-controls"><label><span>路径分段贸易额下限 <b>{formatM(routeValue)}</b></span><input type="range" min="0" max="3" step="0.1" value={routeValue} onChange={e=>setRouteValue(Number(e.target.value))}/></label><label><span>路径分段增幅下限 <b>{routeGrowth}%</b></span><input type="range" min="0" max="100" step="5" value={routeGrowth} onChange={e=>setRouteGrowth(Number(e.target.value))}/></label><div><strong>{activeRoutes.length}</strong><span>条路径信号</span></div></div>
-      <div className="route-list">{activeRoutes.map(route=><article className="route-card" key={route.id}><div className="route-title"><div><span>HS2022 H6 {route.hs} · {route.coverage}</span><h3>{route.product} / {route.hub}</h3></div><div className="route-title-actions"><em className={`reliability r-${route.reliability}`}>可靠性 {route.reliability}</em><a href={route.source} target="_blank" rel="noreferrer">数据源 ↗</a></div></div><div className="route-chain">{route.nodes.map((node,index)=><span key={`${route.id}-${node}-${index}`}><b className={index===0?"origin":index===route.nodes.length-1?"destination":"transit"}>{node}</b>{index<route.nodes.length-1&&<i>→</i>}</span>)}</div><div className="route-leg-list">{routeLegs(route).map(leg=><div key={`${route.id}-${leg.label}`}><span>{leg.label}</span><strong>{formatM(leg.values[0])} → {formatM(leg.values[1])}</strong><em>{signed(growth(leg.values[1],leg.values[0]))}</em></div>)}</div><p>中国→印度直接流：{formatM(route.directToIndia[0])} → {formatM(route.directToIndia[1])}（{signed(growth(route.directToIndia[1],route.directToIndia[0]))}）</p><RouteProof route={route}/></article>)}</div>
+      <div className="route-controls"><label><span>路径分段贸易额下限 <b>{formatM(routeValue)}</b></span><input type="range" min="0" max="3" step="0.1" value={routeValue} onChange={e=>setRouteValue(Number(e.target.value))}/></label><label><span>2026已公布/2025全年比例下限 <b>{routeGrowth}%</b></span><input type="range" min="0" max="100" step="5" value={routeGrowth} onChange={e=>setRouteGrowth(Number(e.target.value))}/></label><div><strong>{activeRoutes.length}</strong><span>条路径信号</span></div></div>
+      <div className="route-list">{activeRoutes.map(route=><article className="route-card" key={route.id}><div className="route-title"><div><span>HS2022 H6 {route.hs} · {route.coverage}</span><h3>{route.product} / {route.hub}</h3></div><div className="route-title-actions"><em className={`reliability r-${route.reliability}`}>可靠性 {route.reliability}</em><a href={route.source} target="_blank" rel="noreferrer">数据源 ↗</a></div></div><div className="route-chain">{route.nodes.map((node,index)=><span key={`${route.id}-${node}-${index}`}><b className={index===0?"origin":index===route.nodes.length-1?"destination":"transit"}>{node}</b>{index<route.nodes.length-1&&<i>→</i>}</span>)}</div><div className="route-leg-list">{routeLegs(route).map(leg=><div key={`${route.id}-${leg.label}`}><span>{leg.label}</span><strong>{formatRouteValue(leg.values[0])} → {formatRouteValue(leg.values[1])}</strong><em>{routeComparisonLabel(leg.values)}</em></div>)}</div><p>中国→印度直接流：{formatRouteValue(route.directToIndia[0])} → {formatRouteValue(route.directToIndia[1])}（{routeComparisonLabel(route.directToIndia)}）</p><RouteProof route={route}/></article>)}</div>
       <div className="route-subheading"><span>MULTI-NODE WATCHLIST</span><h3>两个中转国的待核验网络</h3><p>以下候选要求同一真实 HS6、同一年度窗口、三段双边贸易均可复核且同步上升。它们代表需要穿透核验的供应网络，不代表同一批货物依次经过全部节点。</p></div>
-      <div className="route-list route-network-cards">{auditedRouteNetworks.map(route=><article className="route-card" key={route.id}><div className="route-title"><div><span>HS2022 H6 {route.hs} · {route.coverage} · 三段数据</span><h3>{route.product}</h3></div><div className="route-title-actions"><em className={`reliability r-${route.reliability}`}>可靠性 {route.reliability}</em><a href={route.source} target="_blank" rel="noreferrer">数据源 ↗</a></div></div><div className="route-chain">{route.nodes.map((node,index)=><span key={`${route.id}-${node}-${index}`}><b className={index===0?"origin":index===route.nodes.length-1?"destination":"transit"}>{node}</b>{index<route.nodes.length-1&&<i>→</i>}</span>)}</div><div className="route-leg-list">{route.legs.map(leg=><div key={`${route.id}-${leg.label}`}><span>{leg.label}</span><strong>{formatM(leg.values[0])} → {formatM(leg.values[1])}</strong><em>{signed(growth(leg.values[1],leg.values[0]))}</em></div>)}</div><p>中国→印度直接流：{formatM(route.directToIndia[0])} → {formatM(route.directToIndia[1])}（{signed(growth(route.directToIndia[1],route.directToIndia[0]))}）</p><RouteProof route={route}/></article>)}</div>
+      <div className="route-list route-network-cards">{auditedRouteNetworks.map(route=><article className="route-card" key={route.id}><div className="route-title"><div><span>HS2022 H6 {route.hs} · {route.coverage} · 三段数据</span><h3>{route.product}</h3></div><div className="route-title-actions"><em className={`reliability r-${route.reliability}`}>可靠性 {route.reliability}</em><a href={route.source} target="_blank" rel="noreferrer">数据源 ↗</a></div></div><div className="route-chain">{route.nodes.map((node,index)=><span key={`${route.id}-${node}-${index}`}><b className={index===0?"origin":index===route.nodes.length-1?"destination":"transit"}>{node}</b>{index<route.nodes.length-1&&<i>→</i>}</span>)}</div><div className="route-leg-list">{route.legs.map(leg=><div key={`${route.id}-${leg.label}`}><span>{leg.label}</span><strong>{formatRouteValue(leg.values[0])} → {formatRouteValue(leg.values[1])}</strong><em>{routeComparisonLabel(leg.values)}</em></div>)}</div><p>中国→印度直接流：{formatRouteValue(route.directToIndia[0])} → {formatRouteValue(route.directToIndia[1])}（{routeComparisonLabel(route.directToIndia)}）</p><RouteProof route={route}/></article>)}</div>
       <aside className="route-case"><div><span>OFFICIAL CASE / 方法校验</span><h3>中国 → 斯里兰卡 → 印度：数字印刷版材查发案例</h3></div><p>印度蒙德拉海关裁决书记录了中国制造的 CTCP 数字印刷版材在科伦坡换装集装箱后运往印度，并以发票、原产地证书、进出提单、斯里兰卡海关材料和当事人陈述相互印证。该案例只用于说明“统计信号之后应如何闭环取证”，不代表本页上述商品发生了相同行为。</p><a href={CUSTOMS_CASE} target="_blank" rel="noreferrer">查看印度海关裁决书 ↗</a></aside>
-      {activeRoutes.length===0&&<div className="route-empty"><span>∅</span><div><strong>当前阈值下没有路径信号</strong><p>这不代表不存在转口。默认阈值要求两段贸易额均不低于 20 万美元、可比期增幅均不低于 20%；可继续降低阈值查看弱信号。</p><button onClick={()=>{setRouteValue(.1);setRouteGrowth(10)}}>查看弱信号</button></div></div>}
-      <div className="route-warning"><strong>判读边界</strong><p>同步上升可能由产业扩张、库存、加工贸易、价格变化或统计差异造成。多节点路径表示需要核验的供应网络，不表示同一批货物依次经过所有国家。信号不是规避管制、非法转口或个案事实的认定；缺失月份不插值，不完整国家不进入排名。</p></div>
+      {activeRoutes.length===0&&<div className="route-empty"><span>∅</span><div><strong>当前阈值下没有路径信号</strong><p>这不代表不存在转口。默认阈值要求已公布分段贸易额均不低于 20 万美元、且 2026 已公布金额达到 2025 全年的一定比例；可继续降低阈值查看弱信号。</p><button onClick={()=>{setRouteValue(.1);setRouteGrowth(10)}}>查看弱信号</button></div></div>}
+      <div className="route-warning"><strong>判读边界</strong><p>2026 为已公布月份，不是全年；页面采用中转国自中国进口的镜像口径补足中国→中转国段，并与中转国对印度出口、印度自中国进口直接流对照。多节点路径表示需要核验的供应网络，不表示同一批货物依次经过所有国家；信号不是规避管制、非法转口或个案事实认定。</p></div>
     </section>
 
-    <section className="section" id="policy"><div className="section-heading"><div><p>CONTROL TIMELINE</p><h2>政策与管制时间线</h2></div><p>HS 编码只是筛查入口。是否受控取决于管制编码、技术参数、最终用户、最终用途以及查询时有效的政策。</p></div><div className="timeline">{policies.map((item,index)=><a className="timeline-item" href={item.url} target="_blank" rel="noreferrer" key={item.date}><span>{item.date}</span><i>{String(index+1).padStart(2,"0")}</i><div><h3>{item.title} ↗</h3><p>{item.body}</p></div></a>)}</div><div className="control-ledger"><h3>可观察管制筛查表</h3>{controls.map(item=><a href={item.source} target="_blank" rel="noreferrer" key={item.referenceHs}><span>{item.referenceHs}</span><strong>{item.item}</strong><p>{item.parameters}</p><em>{item.status} ↗</em></a>)}</div></section>
+    <section className="section policy-section" id="policy"><details className="section-collapse"><summary className="section-heading collapse-heading"><div><p>CONTROL TIMELINE</p><h2>政策与管制时间线</h2></div><b>展开 ↕</b></summary><div className="timeline">{policies.map((item,index)=><a className="timeline-item" href={item.url} target="_blank" rel="noreferrer" key={item.date}><span>{item.date}</span><i>{String(index+1).padStart(2,"0")}</i><div><h3>{item.title} ↗</h3><p>{item.body}</p></div></a>)}</div><div className="control-ledger"><h3>可观察管制筛查表</h3>{controls.map(item=><a href={item.source} target="_blank" rel="noreferrer" key={item.referenceHs}><span>{item.referenceHs}</span><strong>{item.item}</strong><p>{item.parameters}</p><em>{item.status} ↗</em></a>)}</div></details></section>
 
     <section className="section sources-section" id="sources"><details className="section-collapse"><summary className="section-heading collapse-heading"><div><p>SOURCE CENTER</p><h2>来源、口径与可复核性</h2></div><b>展开 ↕</b></summary><div className="source-grid">{sources.map(source=><a className="source-card" href={source.url} target="_blank" rel="noreferrer" key={source.tag}><span>{source.tag}</span><div><h3>{source.title} ↗</h3><p>{source.detail}</p></div><small>{source.period} · 访问 {SNAPSHOT_DATE}</small></a>)}</div><div className="method-grid"><div><span>M01</span><h3>怎么算</h3><p>同一时期、同一真实 HS6/HS8 商品物项：印度从中国进口金额 ÷ 印度该商品进口总额。父级大类不参与汇总，避免重复计算。</p></div><div><span>M02</span><h3>看哪个时间</h3><p>2025 全年数据用于横向比较；2026 年已公布月份只用于观察最新变化，不与全年金额混算。</p></div><div><span>M03</span><h3>编码怎么用</h3><p>公开来源可核验到 HS8 时使用真实 HS8；只能核验到 HS6 时如实显示 HS6，不补零、不冒充八位编码。</p></div><div><span>M04</span><h3>需要注意</h3><p>HS 编码不能替代出口管制技术参数、最终用户和最终用途判断；CIF/FOB、数量单位和分类差异也会影响结论。本工具不构成法律意见。</p></div></div></details></section>
 
