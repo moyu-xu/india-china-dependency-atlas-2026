@@ -925,14 +925,6 @@ function ChinaCustomsHs8Mirror({ item }: { item: CommodityRecord }) {
       <div><span>月度峰值</span><strong>{peak.period} · {compactUsd(peak.usd)}</strong></div>
     </div>
     <p className="customs-hs8-note">口径：中国海关出口统计，中国→印度，贸易伙伴编码 {chinaCustomsHs8.partnerCode}，单位美元；本模块只反映中国出口侧镜像，不替代印度 CIF 进口依赖率。</p>
-    <div className="commodity-trade-mode">
-      {renderTradeModePanel("商品子项贸易方式趋势（全部 HS8 加总）",tradeModes,item.name,commodityModesOpen,setCommodityModesOpen)}
-    </div>
-    <div className="customs-hs8-list">{profile.hs8.map(code=><button className={code.code===selectedCode?.code?"active":""} key={code.code} onClick={()=>setSelectedHs8(code.code)} type="button">
-      <div><code>HS8 {code.code}</code><h4>{code.name}</h4></div>
-      <strong>{compactUsd(code.annual["2025"]?.usd ?? 0)}</strong>
-      <small>2025 · {code.tradeModes[0]?.name ?? "贸易方式待核验"}</small>
-    </button>)}</div>
     {renderCustomsTrend(months,"中国海关出口额（全部 HS8 合计）",`${item.name}中国海关HS8出口额月度趋势图`)}
     {singleHs8&&<p className="customs-hs8-note merge-note">该商品当前仅对应 1 个 HS8，商品总趋势与 HS8 趋势一致，已合并展示。</p>}
     <details className="monthly-table-details">
@@ -944,6 +936,14 @@ function ChinaCustomsHs8Mirror({ item }: { item: CommodityRecord }) {
         </table>
       </div>
     </details>
+    <div className="commodity-trade-mode">
+      {renderTradeModePanel("商品子项贸易方式趋势（全部 HS8 加总）",tradeModes,item.name,commodityModesOpen,setCommodityModesOpen)}
+    </div>
+    <div className="customs-hs8-list">{profile.hs8.map(code=><button className={code.code===selectedCode?.code?"active":""} key={code.code} onClick={()=>setSelectedHs8(code.code)} type="button">
+      <div><code>HS8 {code.code}</code><h4>{code.name}</h4></div>
+      <strong>{compactUsd(code.annual["2025"]?.usd ?? 0)}</strong>
+      <small>2025 · {code.tradeModes[0]?.name ?? "贸易方式待核验"}</small>
+    </button>)}</div>
     {selectedCode&&<div className="customs-hs8-detail">
       <div className="drawer-section-title"><h3>HS8 {selectedCode.code} 月度趋势</h3><span>2025-01—2026-06 · {selectedCode.name}</span></div>
       <div className="customs-hs8-summary compact">
