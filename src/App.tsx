@@ -26,6 +26,12 @@ type CommodityReport = {
   monitoring: string[];
   references: string[];
 };
+type PublicEvidenceEntry = {
+  source: string;
+  fact: string;
+  meta: string;
+  url: string;
+};
 
 type MappingReliability = "高" | "中" | "低";
 type ChinaHs8Profile = {
@@ -182,6 +188,90 @@ const hs8Of = (item: CommodityRecord) => item.hs;
 const codeLevelOf = (item: CommodityRecord) => item.hs.length === 8 ? "中国 HS8" : "HS6";
 const statLevelOf = (item: CommodityRecord) => item.hs.length === 8 ? "中国 HS2022 · 精确 HS8" : "HS2022 · HS6 国际可比口径";
 const reportHref = (id: string) => `${import.meta.env.BASE_URL}reports/${id}.docx`;
+
+const batteryPublicEvidence: PublicEvidenceEntry[] = [
+  {
+    source: "印度新闻信息局（PIB）/印度重工业部",
+    fact: "印度政府议会书面答复指出，印度锂等关键矿产需求全部依赖进口；同时提到中国对高性能锂离子电池、正极材料、人造石墨负极材料及相关制造技术实施出口许可管理，可能造成供应收紧。",
+    meta: "《Impact on EV Due to Policy Changes in China Pertaining to Lithium》；发布 2026-03-17；访问 2026-07-27。",
+    url: "https://www.pib.gov.in/PressReleasePage.aspx?PRID=2241265&lang=1&reg=1",
+  },
+  {
+    source: "Moneycontrol",
+    fact: "Moneycontrol 根据印度商业与工业部数据分析称，2023—2024 财年中国占印度电池包进口额的 72.8%，电池包在印度关键矿产相关进口中占 68%。",
+    meta: "《India’s critical mineral trade is up 10x in ten years: MC Analysis》；发布 2024-10-21；访问 2026-07-27。",
+    url: "https://www.moneycontrol.com/news/business/economy/indias-critical-mineral-trade-is-up-10x-in-ten-years-mc-analysis-12846974.html",
+  },
+  {
+    source: "Amara Raja Group",
+    fact: "Amara Raja 披露，其子公司与中国国轩高科子公司 GIB EnergyX 签署磷酸铁锂电芯技术许可协议，合作范围包括电芯技术知识产权、超级工厂建设支持、关键电池材料全球供应链整合和技术服务。",
+    meta: "《Amara Raja Announces Strategic Technology Collaboration with Gotion-InoBat-Batteries (GIB)》；发布 2024-06-24；访问 2026-07-27。",
+    url: "https://www.amararaja.com/press_release/amara-raja-announces-strategic-technology-collaboration-with-gotion-inobat-batteries-gib/",
+  },
+];
+
+const rareEarthPublicEvidence: PublicEvidenceEntry[] = [
+  {
+    source: "印度新闻信息局（PIB）/印度重工业部",
+    fact: "印度官方披露，2022—2025 年两个主要稀土永磁体税号下，中国占印度进口金额的 59.6%—81.3%，占进口数量的 82.2%—90.4%。",
+    meta: "《Disruption in the Supply of Rare Earth Magnets》；发布 2025-08-01；访问 2026-07-27。",
+    url: "https://www.pib.gov.in/PressReleasePage.aspx?PRID=2151394&lang=2&reg=48",
+  },
+  {
+    source: "The Indian Express（印度快报）",
+    fact: "报道基于官方贸易数据称，2024—2025 财年印度永久磁体进口量约 5.37 万吨，其中约 5 万吨来自中国，占比约 93%。",
+    meta: "《Before China’s rare earth curbs, India’s permanent magnet imports nearly doubled in FY25》；发布 2025-06-09；访问 2026-07-27。",
+    url: "https://indianexpress.com/article/business/india-permanent-magnet-imports-fy25-china-rare-earth-curbs-10057092/",
+  },
+  {
+    source: "CRISIL Ratings",
+    fact: "CRISIL 指出，印度上一财年约 540 吨稀土磁体进口中超过 80% 来自中国；汽车企业通常仅有四至六周库存。",
+    meta: "《Shortage of rare earth magnet can decelerate India’s automotive ride》；发布 2025-06-10；访问 2026-07-27。",
+    url: "https://www.crisilratings.com/en/home/newsroom/press-releases/2025/06/shortage-of-rare-earth-magnet-can-decelerate-indias-automotive-ride.html",
+  },
+];
+
+const tunnellingPublicEvidence: PublicEvidenceEntry[] = [
+  {
+    source: "The Indian Express（印度快报）",
+    fact: "报道调查显示，孟买重大基础设施项目使用的 18 台盾构机中，8 台由中国企业制造，另外 10 台虽为欧美品牌但在中国制造。",
+    meta: "《Crucial to Mumbai infra projects, tunnelling machines made in China》；发布 2020-06-23；访问 2026-07-27。",
+    url: "https://indianexpress.com/article/india/crucial-to-mumbai-infra-projects-tunnelling-machines-made-in-china-6471694/",
+  },
+  {
+    source: "The Indian Express（印度快报）",
+    fact: "报道援引德国海瑞克和印度商业与工业部长表态，部分供印度项目使用、在中国制造的盾构机因中国海关清关异常而延迟或无法交付。",
+    meta: "《Tunnel boring machines: Machines for India delayed, German firm flags bottleneck at Chinese customs》；发布 2024-11-02；访问 2026-07-27。",
+    url: "https://indianexpress.com/article/business/tunnel-boring-machines-machines-for-india-delayed-german-firm-flags-bottleneck-at-chinese-customs-9649284/",
+  },
+];
+
+const engineeringVehiclePublicEvidence: PublicEvidenceEntry[] = [
+  {
+    source: "印度贸易救济总局（DGTR）",
+    fact: "印度 DGTR 对原产于或进口自中国的轮式装载机反倾销最终裁定显示，2018—2019 年至 2021—2022 调查期，中国轮式装载机占印度相关进口数量的 94.52%—98.35%。",
+    meta: "《Final Findings: Anti-dumping investigation concerning imports of “Wheel Loaders” originating in or exported from China PR》；发布 2023-09-29；访问 2026-07-27。",
+    url: "https://dgtr.gov.in/sites/default/files/2024-08/WL%20NCV_29-9-2023.pdf",
+  },
+  {
+    source: "ICRA",
+    fact: "ICRA 指出，印度矿山和工程机械行业约 50% 的零部件需求按价值依赖进口，主要供应来源包括中国、日本和韩国；进口部件集中于底盘、精密液压系统、电子控制单元、传感器和远程信息处理系统。",
+    meta: "《Increasing component localisation could offer ~Rs. 25,000 crore annual opportunity to construction equipment vendors by FY2030》；发布 2024-09；访问 2026-07-27。",
+    url: "https://www.icra.in/Newsletter/9168262a-c574-49de-ac1e-d3b3fcea580e/ICRA%20Insight_Sept2024/ICRA%20Insight_Sept2024.html",
+  },
+];
+
+const publicEvidenceById: Record<string, PublicEvidenceEntry[]> = {
+  battery: batteryPublicEvidence,
+  rareearth: rareEarthPublicEvidence,
+  tunnel: tunnellingPublicEvidence,
+  tunnel_843031: tunnellingPublicEvidence,
+  tunnel_843039: tunnellingPublicEvidence,
+  earthmoving: engineeringVehiclePublicEvidence,
+  earthmoving_dumptruck: engineeringVehiclePublicEvidence,
+  earthmoving_crane: engineeringVehiclePublicEvidence,
+  earthmoving_mixer: engineeringVehiclePublicEvidence,
+};
 
 const commodities: CommodityRecord[] = [
   { id: "battery", hs: "850760", name: "锂离子蓄电池", english: "Lithium-ion accumulators", category: "电子与电力", completeYear: annual(3.807624325, 4.083603910), latestPulse: pulse, alternatives: ["日本", "印度尼西亚", "韩国", "越南", "德国"], definition: "HS 850760：锂离子蓄电池，不包含铅酸蓄电池及其他化学体系。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
@@ -954,6 +1044,7 @@ export default function Home() {
   const selectedReport = selectedRecord && commodityReports[selectedRecord.id] ? exactCommodityReport(selectedRecord, commodityReports[selectedRecord.id]) : null;
   const selectedMonthly = selectedRecord ? monthlyTradeById[selectedRecord.id]??[] : [];
   const selectedAccuracy = selectedReport && selectedRecord ? reportAccuracyById[selectedRecord.id]??defaultReportAccuracy : null;
+  const selectedPublicEvidence = selectedRecord ? publicEvidenceById[selectedRecord.id]??[] : [];
 
   return <main>
     <header className="topbar">
@@ -1068,6 +1159,19 @@ export default function Home() {
           <div className="drawer-section-title"><h3>一、数据事实</h3><span>2025 全年数据</span></div>
           <ol className="report-facts">{selectedReport.dataPoints.map((point,index)=><li key={point}><span>{String(index+1).padStart(2,"0")}</span><p>{point}</p></li>)}</ol>
         </section>
+
+        {selectedPublicEvidence.length>0&&<section>
+          <details className="public-evidence" open={false}>
+            <summary><div><h3>公开证据与来源</h3><span>{selectedPublicEvidence.length} 条公开来源</span></div><b>展开 ↕</b></summary>
+            <div className="public-evidence-list">
+              {selectedPublicEvidence.map((item,index)=><article key={`${selectedRecord.id}-evidence-${index}`}>
+                <span>{String(index+1).padStart(2,"0")}</span>
+                <div><h4>{item.source}</h4><p>{item.fact}</p><small>{item.meta}</small></div>
+                <a href={item.url} target="_blank" rel="noreferrer">原文 ↗</a>
+              </article>)}
+            </div>
+          </details>
+        </section>}
 
         <section>
           <div className="drawer-section-title"><h3>二、第三国路径与多节点网络</h3><span>筛查用途 · 非事实认定</span></div>

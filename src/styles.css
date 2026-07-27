@@ -416,6 +416,20 @@ footer a { border-bottom: 1px solid #171916; padding-bottom: 5px; font-size: 13p
 .report-facts li { display: grid; grid-template-columns: 48px 1fr; gap: 17px; padding: 17px; background: var(--panel); }
 .report-facts li > span { color: var(--gold); font: 600 11px var(--font-geist-mono), monospace; }
 .report-facts li p { margin: 0; color: #c6c1b8; }
+.public-evidence summary { display: flex; justify-content: space-between; align-items: center; gap: 18px; cursor: pointer; list-style: none; border: 1px solid var(--line-strong); background: rgba(255,255,255,.018); padding: 18px 20px; }
+.public-evidence summary::-webkit-details-marker { display: none; }
+.public-evidence summary h3 { margin: 0 0 5px; }
+.public-evidence summary span { color: var(--muted); font-size: 12px; }
+.public-evidence summary b { color: var(--teal-bright); font-size: 12px; white-space: nowrap; }
+.public-evidence[open] summary { border-color: rgba(86,211,195,.45); }
+.public-evidence[open] summary b { color: var(--gold-bright); }
+.public-evidence-list { display: grid; gap: 1px; margin-top: 12px; background: var(--line); }
+.public-evidence-list article { display: grid; grid-template-columns: 42px 1fr auto; gap: 16px; align-items: start; padding: 18px; background: var(--panel); }
+.public-evidence-list article > span { color: var(--gold); font: 700 11px var(--font-geist-mono), monospace; }
+.public-evidence-list h4 { margin: 0 0 9px; color: var(--text); font: 600 16px "Noto Serif SC", serif; }
+.public-evidence-list p { margin: 0; color: #c7c1b7; }
+.public-evidence-list small { display: block; margin-top: 10px; color: #938d83; font-size: 11px; line-height: 1.7; }
+.public-evidence-list a { color: var(--teal-bright); font-size: 12px; font-weight: 700; white-space: nowrap; }
 .route-network-list { display: grid; gap: 12px; margin-top: 18px; }
 .route-network { padding: 19px; border: 1px solid var(--line-strong); background: rgba(255,255,255,.018); }
 .route-network-head { display: flex; justify-content: space-between; gap: 15px; align-items: baseline; }
