@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { MONTHLY_SOURCE_ACCESSED, MONTHLY_SOURCE_LABEL, MONTHLY_SOURCE_URL, monthlyTradeById, type MonthlyTradePoint } from "./data/monthlyTrade";
 import chinaCustomsHs8 from "./data/chinaCustomsHs8.json";
+import { enterpriseProductAliasByCommodityId, enterpriseProductsBySlug, typicalEnterprises, type TypicalEnterpriseProduct } from "./data/typicalEnterprises";
 
 type Category = "全部" | "原材料" | "医药化工" | "电子与电力" | "工业机械" | "工程设备" | "车辆零部件";
 type TrendPoint = { year: string; china: number; world: number; share: number };
@@ -147,6 +148,7 @@ export type RouteNetworkSignal = {
 const SNAPSHOT_DATE = "2026-07-23";
 const REPORT_DATE = "2026-07-23";
 const CURRENT_HS_VERSION = "HS 2022";
+const APP_BASE = import.meta.env.BASE_URL.replace(/\/$/,"");
 const CROSSWALK_HS_VERSION = "HS 2017→2022 对照";
 const COMTRADE = "https://uncomtrade.org/docs/un-comtrade-api/";
 const TRADESTAT = "https://tradestat.commerce.gov.in/meidb/commodity_wise_all_countries_import";
@@ -154,6 +156,15 @@ const TIA = "https://trade-analytics.commerce.gov.in/public";
 const CONTROL_RULE = "https://xzfg.moj.gov.cn/front/law/detail?LawID=1735&Query=";
 const CONTROL_CATALOG = "https://exportcontrol.mofcom.gov.cn/article/hgfw/lywxcx/gzqd/202601/1203.html";
 const CUSTOMS_CASE = "https://gujaratcustoms.gov.in/juridictional_commissionerate/public/storage/pdfs/7bRyuZebEmCGU3qLJ13vFhyHyoz2Nl3QpOWhUIz6.pdf";
+const enterpriseHref = (slug:string) => `${APP_BASE}/products/${slug}/enterprises`;
+const productDetailHref = (productId:string) => `${APP_BASE}/?product=${productId}`;
+const enterpriseRouteSlug = () => {
+  const path = window.location.pathname.replace(/\/$/,"");
+  const prefix = `${APP_BASE}/products/`;
+  if (!path.startsWith(prefix)) return "";
+  const rest = path.slice(prefix.length);
+  return rest.endsWith("/enterprises") ? rest.replace(/\/enterprises$/,"") : "";
+};
 
 const categories: Category[] = ["全部", "原材料", "医药化工", "电子与电力", "工业机械", "工程设备", "车辆零部件"];
 const pulse = { period: "2026-01—05", china: null, world: null, share: null, completeness: "官方库已发布，逐项以月度图为准", source: "India TradeStat" } as const;
@@ -310,23 +321,23 @@ const commoditySubitemsByParent: Record<string,CommodityRecord[]> = {
   earthmoving: earthmovingSubitems,
 };
 const aggregateTopicIds = new Set(["fertilizer", "tunnel", "earthmoving"]);
+const hiddenCommodityIds = new Set(["fertilizer","fertilizer_urea","fertilizer_dap","fertilizer_mop","fertilizer_npk","earthmoving_mixer"]);
 const matrixCommodities = [
   ...commodities.filter(item=>!aggregateTopicIds.has(item.id)),
   ...fertilizerSubitems,
   ...tunnelSubitems,
   ...earthmovingSubitems,
-];
+].filter(item=>!hiddenCommodityIds.has(item.id));
 const allCommodityRecords = matrixCommodities;
 const fertilizerFocusIds = ["fertilizer_urea", "fertilizer_dap", "fertilizer_mop", "fertilizer_npk"];
 const matrixGroups: MatrixGroup[] = [
   { id:"chips", title:"芯片与半导体", english:"Chips & semiconductors", description:"聚焦光伏电池等已纳入管制筛查的电子核心物项。", children:["semiconductor"] },
   { id:"power", title:"储能设备", english:"Energy storage", description:"锂离子蓄电池等储能相关物项。", children:["battery"] },
-  { id:"fertilizer-group", title:"化肥", english:"Fertilizers", description:"按尿素、DAP、MOP、NPK 四个具体子项下钻。", children:["fertilizer_urea","fertilizer_dap","fertilizer_mop","fertilizer_npk"] },
   { id:"critical-minerals", title:"关键矿物与稀土", english:"Critical minerals & rare earths", description:"天然石墨和稀土化合物，需结合参数判断管制属性。", children:["graphite","rareearth"] },
   { id:"fluid-control", title:"泵类设备", english:"Pumps", description:"保留离心泵等可继续核验的具体物项。", children:["pumps"] },
   { id:"industrial-parts", title:"工业机械零部件", english:"Industrial machinery parts", description:"机床、钻探和凿井机械关键零部件。", children:["toolparts","machineparts"] },
   { id:"tunnelling", title:"隧道掘进设备", english:"Tunnelling machinery", description:"自推进与非自推进隧道掘进相关设备。", children:["tunnel_843031","tunnel_843039"] },
-  { id:"construction-vehicles", title:"工程车辆", english:"Construction vehicles", description:"非公路自卸车、汽车起重机、混凝土搅拌车。", children:["earthmoving_dumptruck","earthmoving_crane","earthmoving_mixer"] },
+  { id:"construction-vehicles", title:"工程车辆", english:"Construction vehicles", description:"非公路自卸车、汽车起重机。", children:["earthmoving_dumptruck","earthmoving_crane"] },
 ];
 
 const commodityReports: Record<string, CommodityReport> = {
@@ -732,6 +743,7 @@ const sources = [
   { tag:"GOI", title:"印度议会答复 4023/2025", detail:"说明对华进口以原材料、中间品、资本品、电子零件、机械及零件等为主。", period:"2025-03-25", url:"https://www.commerce.gov.in/wp-content/uploads/2025/03/LS-USQ-No.4023-dated.-25.03.2025.pdf" },
   { tag:"CN", title:"两用物项出口管制条例与 2026 目录", detail:"管制编码和技术参数优先于 HS 参考编码；最终用户与最终用途同样影响判定。", period:"现行", url:CONTROL_CATALOG },
 ];
+const visibleSources = sources.filter(source=>source.tag!=="FERT" && source.title!=="DGCI&S 化肥直接/间接装运专题");
 
 const policies = [
   { date:"2024.12", title:"统一两用物项出口管制框架生效", body:"条例覆盖出口、过境、转运、通运、再出口以及特定境外再转移情形。", url:CONTROL_RULE },
@@ -755,7 +767,7 @@ const weakestRouteValue = (route:RouteSignal) => Math.min(...routeLegs(route).ma
 const weakestRouteGrowth = (route:RouteSignal) => Math.min(...routeLegs(route).map(leg=>routeYtdRatio(leg.values)));
 type RouteProofRecord = Pick<RouteSignal,"id"|"evidence"|"methodSteps"|"inference"|"sourceDetail"|"caveat">;
 function RouteProof({ route }: { route: RouteProofRecord }) {
-  return <details className="route-proof"><summary><h4>推演判断过程与数据来源</h4><b>展开 ↕</b></summary><dl className="route-analysis"><div><dt>公开数据</dt><dd>{route.evidence}</dd></div><div><dt>判断步骤</dt><dd><ol>{route.methodSteps.map((step,index)=><li key={`${route.id}-step-${index}`}>{step}</li>)}</ol></dd></div><div><dt>推演结论</dt><dd>{route.inference}</dd></div><div><dt>数据来源</dt><dd>{route.sourceDetail}</dd></div><div><dt>限制</dt><dd>{route.caveat}</dd></div></dl></details>;
+  return <details className="route-proof"><summary><h4>推演判断过程与数据来源</h4><b>展开 ↕</b></summary><dl className="route-analysis"><div><dt>推理口径</dt><dd>第一段采用中国海关出口统计（中国→中转国，美元），第二段采用公开报告国数据（中转国→印度），并展示印度自中国直接进口作为对照。统计信号不认定实际转口或违法。</dd></div><div><dt>公开数据</dt><dd>{route.evidence}</dd></div><div><dt>判断步骤</dt><dd><ol>{route.methodSteps.map((step,index)=><li key={`${route.id}-step-${index}`}>{step}</li>)}</ol></dd></div><div><dt>推演结论</dt><dd>{route.inference}</dd></div><div><dt>数据来源</dt><dd>{route.sourceDetail}</dd></div><div><dt>限制</dt><dd>{route.caveat}</dd></div></dl></details>;
 }
 const exactCommodityReport = (item:CommodityRecord, base:CommodityReport):CommodityReport => ({
   ...base,
@@ -804,6 +816,8 @@ const formatMonthlyValue = (value:number|null) => value === null ? "—" : value
 
 function MonthlyTrend({points}:{points:MonthlyTradePoint[]}) {
   const [metric,setMetric] = useState<"value"|"share">("value");
+  const [chartOpen,setChartOpen] = useState(false);
+  const [tableOpen,setTableOpen] = useState(false);
   const available = points.filter(point=>point.status==="available" && point.world!==null);
   const latest = available.at(-1);
   const width = 720;
@@ -825,31 +839,36 @@ function MonthlyTrend({points}:{points:MonthlyTradePoint[]}) {
       <div><span>全球进口</span><strong>{latest?`$${formatMonthlyValue(latest.world)}M`:"—"}</strong></div>
       <div><span>对华来源占比</span><strong>{latest?.share===null||latest?.share===undefined?"—":`${latest.share.toFixed(1)}%`}</strong></div>
     </div>
-    <div className="monthly-toolbar">
-      <div className="monthly-toggle" aria-label="趋势图指标">
-        <button className={metric==="value"?"active":""} onClick={()=>setMetric("value")}>进口额</button>
-        <button className={metric==="share"?"active":""} onClick={()=>setMetric("share")}>对华占比</button>
-      </div>
-      <span>单位：{metric==="value"?"US$ million":"%"}</span>
-    </div>
-    <div className="monthly-chart-wrap">
-      <svg className="monthly-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`2024年12月至2026年6月${metric==="value"?"进口额":"对华占比"}趋势图`}>
-        {pendingIndex>=0&&<rect className="pending-zone" x={Math.max(plot.left,x(pendingIndex)-12)} y={plot.top} width={width-Math.max(plot.left,x(pendingIndex)-12)-plot.right} height={plotHeight}/>}
-        {gridValues.map(value=><g key={value}><line className="chart-grid" x1={plot.left} x2={width-plot.right} y1={y(value)} y2={y(value)}/><text className="chart-y-label" x={plot.left-10} y={y(value)+4} textAnchor="end">{metric==="share"?`${value.toFixed(0)}%`:value.toFixed(maxValue<10?1:0)}</text></g>)}
-        {metric==="value"?<><path className="monthly-line world" d={pathFor("world")}/><path className="monthly-line china" d={pathFor("china")}/></>:<path className="monthly-line share" d={pathFor("share")}/>}
-        {points.map((point,index)=>(index%3===0||index===points.length-1)?<text className="chart-x-label" key={point.period} x={x(index)} y={height-14} textAnchor={index===0?"start":index===points.length-1?"end":"middle"}>{point.period}</text>:null)}
-        {pendingIndex>=0&&<text className="pending-label" x={(x(pendingIndex)+width-plot.right)/2} y={plot.top+42} textAnchor="middle">待发布 / 待核验</text>}
-      </svg>
-      <div className="monthly-legend">{metric==="value"?<><span><i className="legend-world"/>全球进口</span><span><i className="legend-china"/>自中国进口</span></>:<span><i className="legend-share"/>对华来源占比</span>}</div>
-    </div>
-    <details className="monthly-table-details">
-      <summary><span>月度明细表</span><small>{points.length} 个月 · 展开查看逐月金额</small><b>展开 ↕</b></summary>
-      <div className="monthly-table-wrap">
+    <details className="monthly-table-details trend-details" open={chartOpen} onToggle={event=>setChartOpen(event.currentTarget.open)}>
+      <summary><span>月度趋势图</span><b>{chartOpen?"收起":"展开"} ↕</b></summary>
+      {chartOpen&&<>
+        <div className="monthly-toolbar">
+          <div className="monthly-toggle" aria-label="趋势图指标">
+            <button className={metric==="value"?"active":""} onClick={()=>setMetric("value")}>进口额</button>
+            <button className={metric==="share"?"active":""} onClick={()=>setMetric("share")}>对华占比</button>
+          </div>
+          <span>单位：{metric==="value"?"US$ million":"%"}</span>
+        </div>
+        <div className="monthly-chart-wrap">
+          <svg className="monthly-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`2024年12月至2026年6月${metric==="value"?"进口额":"对华占比"}趋势图`}>
+            {pendingIndex>=0&&<rect className="pending-zone" x={Math.max(plot.left,x(pendingIndex)-12)} y={plot.top} width={width-Math.max(plot.left,x(pendingIndex)-12)-plot.right} height={plotHeight}/>}
+            {gridValues.map(value=><g key={value}><line className="chart-grid" x1={plot.left} x2={width-plot.right} y1={y(value)} y2={y(value)}/><text className="chart-y-label" x={plot.left-10} y={y(value)+4} textAnchor="end">{metric==="share"?`${value.toFixed(0)}%`:value.toFixed(maxValue<10?1:0)}</text></g>)}
+            {metric==="value"?<><path className="monthly-line world" d={pathFor("world")}/><path className="monthly-line china" d={pathFor("china")}/></>:<path className="monthly-line share" d={pathFor("share")}/>}
+            {points.map((point,index)=>(index%3===0||index===points.length-1)?<text className="chart-x-label" key={point.period} x={x(index)} y={height-14} textAnchor={index===0?"start":index===points.length-1?"end":"middle"}>{point.period}</text>:null)}
+            {pendingIndex>=0&&<text className="pending-label" x={(x(pendingIndex)+width-plot.right)/2} y={plot.top+42} textAnchor="middle">待发布 / 待核验</text>}
+          </svg>
+          <div className="monthly-legend">{metric==="value"?<><span><i className="legend-world"/>全球进口</span><span><i className="legend-china"/>自中国进口</span></>:<span><i className="legend-share"/>对华来源占比</span>}</div>
+        </div>
+      </>}
+    </details>
+    <details className="monthly-table-details" open={tableOpen} onToggle={event=>setTableOpen(event.currentTarget.open)}>
+      <summary><span>月度明细表</span><b>{tableOpen?"收起":"展开"} ↕</b></summary>
+      {tableOpen&&<div className="monthly-table-wrap">
         <table className="monthly-table">
           <thead><tr><th>月份</th><th>自中国进口</th><th>全球进口</th><th>对华占比</th><th>状态</th></tr></thead>
           <tbody>{points.map(point=><tr key={point.period} className={point.status==="pending"?"pending":""}><td>{point.period}</td><td>{point.china===null?"—":`$${formatMonthlyValue(point.china)}M`}</td><td>{point.world===null?"—":`$${formatMonthlyValue(point.world)}M`}</td><td>{point.share===null?"—":`${point.share.toFixed(1)}%`}</td><td>{point.status==="available"?"已发布":"待发布/核验"}</td></tr>)}</tbody>
         </table>
-      </div>
+      </div>}
     </details>
     <p className="monthly-note">月度序列来源：<a href={MONTHLY_SOURCE_URL} target="_blank" rel="noreferrer">{MONTHLY_SOURCE_LABEL}</a>，访问 {MONTHLY_SOURCE_ACCESSED}。印度 TradeStat 声明已更新至 2026-05，但本快照仅展示可由 UN Comtrade API 逐月复核的数值；其余月份不作估算。</p>
   </div>;
@@ -861,6 +880,43 @@ const customsProfileOf = (item: CommodityRecord) => customsByHs6[item.hs.slice(0
 const formatUsd = (value:number) => value >= 1_000_000_000 ? `$${(value/1_000_000_000).toFixed(2)}B` : `$${(value/1_000_000).toFixed(2)}M`;
 const compactUsd = (value:number) => value ? formatUsd(value) : "—";
 const customsYearValue = (profile: CustomsHs6Profile | undefined, year:string) => profile?.annual?.[year]?.usd ?? 0;
+
+function CustomsTrend({months,label,ariaLabel}:{months: CustomsMonth[]; label:string; ariaLabel:string}) {
+  const width = 720;
+  const height = 250;
+  const plot = { left:56, right:18, top:24, bottom:45 };
+  const plotWidth = width-plot.left-plot.right;
+  const plotHeight = height-plot.top-plot.bottom;
+  const maxValue = Math.max(1,...months.map(point=>point.usd/1_000_000));
+  const x = (index:number) => plot.left+(months.length<=1?0:index/(months.length-1)*plotWidth);
+  const y = (value:number) => plot.top+plotHeight-(value/maxValue)*plotHeight;
+  const line = months.map((point,index)=>`${index===0?"M":"L"}${x(index).toFixed(1)},${y(point.usd/1_000_000).toFixed(1)}`).join(" ");
+  const gridValues = [0,.25,.5,.75,1].map(ratio=>maxValue*ratio);
+  return <>
+    <div className="monthly-toolbar"><span>单位：US$ million</span><span>{months[0]?.period ?? "—"}—{months.at(-1)?.period ?? "—"} · {label}</span></div>
+    <div className="monthly-chart-wrap">
+      <svg className="monthly-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={ariaLabel}>
+        {gridValues.map(value=><g key={value}><line className="chart-grid" x1={plot.left} x2={width-plot.right} y1={y(value)} y2={y(value)}/><text className="chart-y-label" x={plot.left-10} y={y(value)+4} textAnchor="end">{value.toFixed(maxValue<10?1:0)}</text></g>)}
+        <path className="monthly-line customs" d={line}/>
+        {months.map((point,index)=>(index%2===0||index===months.length-1)?<text className="chart-x-label" key={point.period} x={x(index)} y={height-14} textAnchor={index===0?"start":index===months.length-1?"end":"middle"}>{point.period.slice(4)}</text>:null)}
+      </svg>
+      <div className="monthly-legend"><span><i className="legend-customs"/>{label}</span></div>
+    </div>
+  </>;
+}
+
+function TradeModeTrendCard({mode,scope,inWindow}:{mode: CustomsTradeMode; scope:string; inWindow:(period:string)=>boolean}) {
+  const [open,setOpen] = useState(false);
+  const modeMonths = mode.months.filter(point=>inWindow(point.period));
+  return <details className="trade-mode-trend-card" open={open} onToggle={event=>setOpen(event.currentTarget.open)}>
+    <summary className="trade-mode-trend-head">
+      <div><code>{mode.code}</code><h4>{mode.name}</h4></div>
+      <div><strong>{compactUsd(mode.usd)}</strong><small>{open?"收起":"展开趋势"} ↕</small></div>
+    </summary>
+    {open&&<CustomsTrend months={modeMonths} label={`${mode.name}出口额`} ariaLabel={`${scope}${mode.name}贸易方式月度趋势图`}/>}
+  </details>;
+}
+
 const groupChildren = (group: MatrixGroup) => group.children.map(id=>allCommodityRecords.find(record=>record.id===id)).filter(Boolean) as CommodityRecord[];
 const groupStats = (items: CommodityRecord[]) => {
   const china = items.reduce((sum,item)=>sum+item.completeYear.china,0);
@@ -874,8 +930,14 @@ function ChinaCustomsHs8Mirror({ item }: { item: CommodityRecord }) {
   const [selectedHs8,setSelectedHs8] = useState("");
   const [commodityModesOpen,setCommodityModesOpen] = useState(false);
   const [hs8ModesOpen,setHs8ModesOpen] = useState(false);
+  const [customsTrendOpen,setCustomsTrendOpen] = useState(false);
+  const [customsTableOpen,setCustomsTableOpen] = useState(false);
+  const [hs8ListOpen,setHs8ListOpen] = useState(false);
+  const [hs8TrendOpen,setHs8TrendOpen] = useState(false);
+  const [hs8TableOpen,setHs8TableOpen] = useState(false);
   useEffect(()=>setSelectedHs8(profile?.hs8[0]?.code ?? ""),[item.id, profile]);
-  useEffect(()=>{setCommodityModesOpen(false);setHs8ModesOpen(false);},[item.id, selectedHs8]);
+  useEffect(()=>setHs8ListOpen(false),[item.id]);
+  useEffect(()=>{setCommodityModesOpen(false);setHs8ModesOpen(false);setCustomsTrendOpen(false);setCustomsTableOpen(false);setHs8TrendOpen(false);setHs8TableOpen(false);},[item.id, selectedHs8]);
   if (!profile) {
     return <div className="customs-hs8-empty"><strong>中国海关 HS8 数据待补充</strong><p>当前已导出的海关统计文件中尚未包含 HS {item.hs} 对应的中国出口至印度八位明细。后续补充 CSV 后，本模块会自动显示美元金额、HS8 子项和月度序列。</p></div>;
   }
@@ -889,41 +951,9 @@ function ChinaCustomsHs8Mirror({ item }: { item: CommodityRecord }) {
   const annual2025 = customsYearValue(profile,"2025");
   const annual2026 = customsYearValue(profile,"2026");
   const singleHs8 = profile.hs8.length === 1;
-  const width = 720;
-  const height = 250;
-  const plot = { left:56, right:18, top:24, bottom:45 };
-  const renderCustomsTrend = (chartMonths: CustomsMonth[], label:string, ariaLabel:string) => {
-    const plotWidth = width-plot.left-plot.right;
-    const plotHeight = height-plot.top-plot.bottom;
-    const maxValue = Math.max(1,...chartMonths.map(point=>point.usd/1_000_000));
-    const x = (index:number) => plot.left+(chartMonths.length<=1?0:index/(chartMonths.length-1)*plotWidth);
-    const y = (value:number) => plot.top+plotHeight-(value/maxValue)*plotHeight;
-    const line = chartMonths.map((point,index)=>`${index===0?"M":"L"}${x(index).toFixed(1)},${y(point.usd/1_000_000).toFixed(1)}`).join(" ");
-    const gridValues = [0,.25,.5,.75,1].map(ratio=>maxValue*ratio);
-    return <>
-      <div className="monthly-toolbar"><span>单位：US$ million</span><span>{chartMonths[0]?.period ?? "—"}—{chartMonths.at(-1)?.period ?? "—"} · {label}</span></div>
-      <div className="monthly-chart-wrap">
-        <svg className="monthly-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={ariaLabel}>
-          {gridValues.map(value=><g key={value}><line className="chart-grid" x1={plot.left} x2={width-plot.right} y1={y(value)} y2={y(value)}/><text className="chart-y-label" x={plot.left-10} y={y(value)+4} textAnchor="end">{value.toFixed(maxValue<10?1:0)}</text></g>)}
-          <path className="monthly-line customs" d={line}/>
-          {chartMonths.map((point,index)=>(index%2===0||index===chartMonths.length-1)?<text className="chart-x-label" key={point.period} x={x(index)} y={height-14} textAnchor={index===0?"start":index===chartMonths.length-1?"end":"middle"}>{point.period.slice(4)}</text>:null)}
-        </svg>
-        <div className="monthly-legend"><span><i className="legend-customs"/>{label}</span></div>
-      </div>
-    </>;
-  };
   const renderTradeModeTrends = (modes: CustomsTradeMode[], scope:string) => (
     <div className="trade-mode-trend-grid">
-      {modes.length ? modes.map(mode=>{
-        const modeMonths = mode.months.filter(point=>inWindow(point.period));
-        return <details className="trade-mode-trend-card" key={`${scope}-${mode.code}-${mode.name}`}>
-          <summary className="trade-mode-trend-head">
-            <div><code>{mode.code}</code><h4>{mode.name}</h4></div>
-            <div><strong>{compactUsd(mode.usd)}</strong><small>展开趋势 ↕</small></div>
-          </summary>
-          {renderCustomsTrend(modeMonths,`${mode.name}出口额`,`${scope}${mode.name}贸易方式月度趋势图`)}
-        </details>;
-      }) : <p className="trade-mode-empty">当前导出数据未包含贸易方式月度拆分。</p>}
+      {modes.length ? modes.map(mode=><TradeModeTrendCard mode={mode} scope={scope} inWindow={inWindow} key={`${scope}-${mode.code}-${mode.name}`}/>) : <p className="trade-mode-empty">当前导出数据未包含贸易方式月度拆分。</p>}
     </div>
   );
   const renderTradeModePanel = (title:string, modes: CustomsTradeMode[], scope:string, open:boolean, setOpen:(next:boolean)=>void) => {
@@ -934,7 +964,7 @@ function ChinaCustomsHs8Mirror({ item }: { item: CommodityRecord }) {
         <div><h4>{title}</h4><span>{modes.length} 种贸易方式 · 最大项 {topMode?.name ?? "—"} · 合计 {compactUsd(total)}</span></div>
         <b>{open ? "收起" : "展开"} ↕</b>
       </summary>
-      {renderTradeModeTrends(modes,scope)}
+      {open&&renderTradeModeTrends(modes,scope)}
     </details>;
   };
 
@@ -945,27 +975,32 @@ function ChinaCustomsHs8Mirror({ item }: { item: CommodityRecord }) {
       <div><span>HS8 子项</span><strong>{profile.hs8.length}<small> 项</small></strong></div>
       <div><span>月度峰值</span><strong>{peak.period} · {compactUsd(peak.usd)}</strong></div>
     </div>
-    <p className="customs-hs8-note">口径：中国海关出口统计，中国→印度，贸易伙伴编码 {chinaCustomsHs8.partnerCode}，单位美元；本模块只反映中国出口侧镜像，不替代印度 CIF 进口依赖率。</p>
-    {renderCustomsTrend(months,"中国海关出口额（全部 HS8 合计）",`${item.name}中国海关HS8出口额月度趋势图`)}
+    <details className="monthly-table-details trend-details" open={customsTrendOpen} onToggle={event=>setCustomsTrendOpen(event.currentTarget.open)}>
+      <summary><span>中国海关月度趋势图</span><b>{customsTrendOpen ? "收起" : "展开"} ↕</b></summary>
+      {customsTrendOpen&&<CustomsTrend months={months} label="中国海关出口额（全部 HS8 合计）" ariaLabel={`${item.name}中国海关HS8出口额月度趋势图`}/>}
+    </details>
     {singleHs8&&<p className="customs-hs8-note merge-note">该商品当前仅对应 1 个 HS8，商品总趋势与 HS8 趋势一致，已合并展示。</p>}
-    <details className="monthly-table-details">
-      <summary><span>中国海关月度明细表</span><small>{months.length} 个月 · 全部 HS8 合计</small><b>展开 ↕</b></summary>
-      <div className="monthly-table-wrap">
+    <details className="monthly-table-details" open={customsTableOpen} onToggle={event=>setCustomsTableOpen(event.currentTarget.open)}>
+      <summary><span>中国海关月度明细表</span><b>{customsTableOpen ? "收起" : "展开"} ↕</b></summary>
+      {customsTableOpen&&<div className="monthly-table-wrap">
         <table className="monthly-table">
           <thead><tr><th>月份</th><th>出口额</th><th>第一数量</th><th>第二数量</th></tr></thead>
           <tbody>{months.map(point=><tr key={point.period}><td>{point.period}</td><td>{compactUsd(point.usd)}</td><td>{formatInteger(point.firstQty)}</td><td>{formatInteger(point.secondQty)}</td></tr>)}</tbody>
         </table>
-      </div>
+      </div>}
     </details>
     <div className="commodity-trade-mode">
-      {renderTradeModePanel("商品子项贸易方式趋势（全部 HS8 加总）",tradeModes,item.name,commodityModesOpen,setCommodityModesOpen)}
+      {renderTradeModePanel(singleHs8 ? "贸易方式趋势" : "商品子项贸易方式趋势（全部 HS8 加总）",tradeModes,item.name,commodityModesOpen,setCommodityModesOpen)}
     </div>
-    <div className="customs-hs8-list">{profile.hs8.map(code=><button className={code.code===selectedCode?.code?"active":""} key={code.code} onClick={()=>setSelectedHs8(code.code)} type="button">
-      <div><code>HS8 {code.code}</code><h4>{code.name}</h4></div>
-      <strong>{compactUsd(code.annual["2025"]?.usd ?? 0)}</strong>
-      <small>2025 · {code.tradeModes[0]?.name ?? "贸易方式待核验"}</small>
-    </button>)}</div>
-    {selectedCode&&<div className="customs-hs8-detail">
+    {!singleHs8&&<details className="monthly-table-details hs8-list-details" open={hs8ListOpen} onToggle={event=>setHs8ListOpen(event.currentTarget.open)}>
+      <summary><span>HS8 商品子项</span><b>{hs8ListOpen ? "收起" : "展开"} ↕</b></summary>
+      {hs8ListOpen&&<div className="customs-hs8-list">{profile.hs8.map(code=><button className={code.code===selectedCode?.code?"active":""} key={code.code} onClick={()=>setSelectedHs8(code.code)} type="button">
+        <div><code>HS8 {code.code}</code><h4>{code.name}</h4></div>
+        <strong>{compactUsd(code.annual["2025"]?.usd ?? 0)}</strong>
+        <small>2025 · {code.tradeModes[0]?.name ?? "贸易方式待核验"}</small>
+      </button>)}</div>}
+    </details>}
+    {!singleHs8&&selectedCode&&<div className="customs-hs8-detail">
       <div className="drawer-section-title"><h3>HS8 {selectedCode.code} 月度趋势</h3><span>2025-01—2026-06 · {selectedCode.name}</span></div>
       <div className="customs-hs8-summary compact">
         <div><span>2025 出口额</span><strong>{compactUsd(selectedCode.annual["2025"]?.usd ?? 0)}</strong></div>
@@ -973,30 +1008,117 @@ function ChinaCustomsHs8Mirror({ item }: { item: CommodityRecord }) {
         <div><span>月度峰值</span><strong>{selectedPeak.period} · {compactUsd(selectedPeak.usd)}</strong></div>
         <div><span>主要贸易方式</span><strong>{selectedCode.tradeModes[0]?.name ?? "—"}</strong></div>
       </div>
-      {!singleHs8&&renderCustomsTrend(selectedMonths,`HS8 ${selectedCode.code} 出口额`,`${selectedCode.name}中国海关HS8出口额月度趋势图`)}
+      <details className="monthly-table-details trend-details" open={hs8TrendOpen} onToggle={event=>setHs8TrendOpen(event.currentTarget.open)}>
+        <summary><span>HS8 {selectedCode.code} 月度趋势图</span><b>{hs8TrendOpen ? "收起" : "展开"} ↕</b></summary>
+        {hs8TrendOpen&&<CustomsTrend months={selectedMonths} label={`HS8 ${selectedCode.code} 出口额`} ariaLabel={`${selectedCode.name}中国海关HS8出口额月度趋势图`}/>}
+      </details>
       {renderTradeModePanel(`HS8 ${selectedCode.code} 贸易方式趋势`,selectedCode.tradeModes,selectedCode.code,hs8ModesOpen,setHs8ModesOpen)}
-      <details className="monthly-table-details">
-        <summary><span>HS8 {selectedCode.code} 月度明细表</span><small>{selectedMonths.length} 个月 · 展开查看逐月出口额</small><b>展开 ↕</b></summary>
-        <div className="monthly-table-wrap">
+      <details className="monthly-table-details" open={hs8TableOpen} onToggle={event=>setHs8TableOpen(event.currentTarget.open)}>
+        <summary><span>HS8 {selectedCode.code} 月度明细表</span><b>{hs8TableOpen ? "收起" : "展开"} ↕</b></summary>
+        {hs8TableOpen&&<div className="monthly-table-wrap">
           <table className="monthly-table">
             <thead><tr><th>月份</th><th>出口额</th><th>第一数量</th><th>第二数量</th></tr></thead>
             <tbody>{selectedMonths.map(point=><tr key={point.period}><td>{point.period}</td><td>{compactUsd(point.usd)}</td><td>{formatInteger(point.firstQty)}</td><td>{formatInteger(point.secondQty)}</td></tr>)}</tbody>
           </table>
-        </div>
+        </div>}
       </details>
     </div>}
-    <p className="monthly-note">来源：{chinaCustomsHs8.sourceLabel}（{chinaCustomsHs8.sourceFiles.join("、")}），访问 {chinaCustomsHs8.accessedAt}；展示为已导出文件内同一 HS6 下全部真实 HS8 明细加总。</p>
   </div>;
 }
 
-export default function Home() {
+const enterpriseStageOf = (companyName:string) => {
+  if (["Reliance New Energy"].includes(companyName)) return "上游";
+  if (["Amara Raja Energy & Mobility", "Tata AutoComp Systems", "Exide Industries", "Sona Comstar", "Uno Minda", "Lucas TVS", "L&T Construction & Mining Machinery", "Action Construction Equipment", "Tata Hitachi", "SANY India", "Afcons Infrastructure"].includes(companyName)) return "中游";
+  if (["Ola Electric Mobility", "Maruti Suzuki India", "Tata Motors", "Mahindra Electric", "JCB India", "BEML", "National High Speed Rail Corporation Limited", "Mumbai Metro Rail Corporation", "Tata Projects", "L&T Construction", "Delhi Metro Rail Corporation"].includes(companyName)) return "下游";
+  return "中游";
+};
+
+function EnterpriseFlowPage({ product }: { product?: TypicalEnterpriseProduct }) {
+  const active = product;
+  return <main className="enterprise-page">
+    <header className="topbar">
+      <a className="brand" href={`${APP_BASE}/`} aria-label="返回首页"><span className="brand-mark">依</span><span>中印供应链依赖图谱<small>INDIA × CHINA SUPPLY ATLAS</small></span></a>
+      <nav aria-label="企业流向导航"><a href={`${APP_BASE}/#matrix`}>依赖矩阵</a><a href={`${APP_BASE}/#routes`}>可能的第三国路径</a><a href={`${APP_BASE}/#sources`}>来源中心</a><a href={`${APP_BASE}/#reports`}>报告下载</a></nav>
+      <span className="snapshot"><i/> ENTERPRISE FLOW</span>
+    </header>
+    <section className="enterprise-hero section">
+      <div className="section-heading">
+        <div><p>ENTERPRISE FLOW / SCREENING</p><h1>典型流向企业</h1></div>
+        <a className="text-btn" href={active ? productDetailHref(active.productId) : `${APP_BASE}/#matrix`}>返回商品详情 ↙</a>
+      </div>
+      <div className="enterprise-switcher" aria-label="商品切换">
+        {typicalEnterprises.map(item=><a key={item.slug} className={active?.slug===item.slug?"active":""} href={enterpriseHref(item.slug)}>{item.productName}</a>)}
+      </div>
+      {!active ? <div className="empty-state"><strong>未找到对应商品</strong><p>请从商品详情页进入“典型流向企业”，或切换到上方已配置的商品。</p></div> : <>
+        <div className="enterprise-overview">
+          <article>
+            <span>PRODUCT</span>
+            <h2>{active.productName}</h2>
+            <p>{active.summary}</p>
+          </article>
+          <article>
+            <span>FLOW MAP</span>
+            <div className="enterprise-flow">
+              {active.flow.map((step,index)=><span key={`${active.slug}-${step}`}>{step}{index<active.flow.length-1&&<i>→</i>}</span>)}
+            </div>
+          </article>
+        </div>
+        <p className="enterprise-type-note">该商品在印度主要流向以下类型企业：</p>
+        <div className="enterprise-type-grid">
+          {active.enterpriseTypes.map((item,index)=><span key={item}><b>{String(index+1).padStart(2,"0")}</b>{item}</span>)}
+        </div>
+        <div className="enterprise-card-grid">
+          {active.enterprises.map(company=><details className="enterprise-card" key={company.companyName}>
+            <summary>
+              <div>
+                <span>{enterpriseStageOf(company.companyName)}</span>
+                <h3>{company.chineseName ?? company.companyName}</h3>
+                <p>{company.englishName}</p>
+              </div>
+              <b>展开 ↕</b>
+            </summary>
+            <div className="enterprise-card-body">
+              <div className="enterprise-tags"><span>{company.industry}</span><span>{company.ownership}</span><span>{company.supplyChainRole}</span></div>
+              <dl>
+                <div><dt>主营业务</dt><dd>{company.business}</dd></div>
+                <div><dt>商品用途</dt><dd>{company.productUsage}</dd></div>
+                <div><dt>供应链关系</dt><dd>{company.supplyChainRelation}</dd></div>
+                <div><dt>典型案例</dt><dd>{company.caseStudy}</dd></div>
+              </dl>
+              <div className="enterprise-source-list">
+                <h4>来源</h4>
+                {company.sources.filter(source=>source.type!=="用户报告" && source.institution!=="用户提供研究报告").map((source,index)=><article key={`${company.companyName}-${source.title}-${index}`}>
+                  <span>{source.type}</span>
+                  <div><strong>{source.institution}</strong><p>{source.title}{source.published ? `（${source.published}）` : ""}</p></div>
+                  {source.url ? <a href={source.url} target="_blank" rel="noreferrer">原始来源 ↗</a> : <em>用户提供报告</em>}
+                </article>)}
+              </div>
+            </div>
+          </details>)}
+        </div>
+        <section className="report-conclusion enterprise-conclusion">
+          <div className="conclusion-heading"><div><span>JUDGEMENT</span><h3>综合判断</h3></div></div>
+          <p>{active.conclusion}</p>
+        </section>
+      </>}
+    </section>
+  </main>;
+}
+
+export default function App() {
+  const slug = enterpriseRouteSlug();
+  if (slug) return <EnterpriseFlowPage product={enterpriseProductsBySlug[slug]}/>;
+  return <Home/>;
+}
+
+function Home() {
   const [category,setCategory] = useState<Category>("全部");
   const [search,setSearch] = useState("");
   const [minShare,setMinShare] = useState(0);
   const [minValue,setMinValue] = useState(0);
   const [expandedGroups,setExpandedGroups] = useState<Set<string>>(()=>new Set(["chips"]));
   const [selected,setSelected] = useState<CommodityRecord|null>(null);
-  const [selectedSubitem,setSelectedSubitem] = useState("fertilizer");
+  const [selectedSubitem,setSelectedSubitem] = useState("battery");
   const [routeValue,setRouteValue] = useState(.2);
   const [routeGrowth,setRouteGrowth] = useState(20);
   const [period,setPeriod] = useState<"annual"|"pulse">("annual");
@@ -1021,6 +1143,14 @@ export default function Home() {
     else next.add(id);
     return next;
   });
+  const focusMatrixCommodity = (id:string, event?: { preventDefault: () => void }) => {
+    event?.preventDefault();
+    const group = matrixGroups.find(entry=>entry.children.includes(id));
+    if (group && groupChildren(group).length > 1) {
+      setExpandedGroups(current => new Set(current).add(group.id));
+    }
+    window.setTimeout(()=>document.getElementById(`commodity-${id}`)?.scrollIntoView({behavior:"smooth",block:"center"}),0);
+  };
 
   const activeRoutes = auditedRoutes.filter(route => weakestRouteValue(route) >= routeValue && weakestRouteGrowth(route) >= routeGrowth);
   const chinaTotal = matrixCommodities.reduce((sum,item)=>sum+item.completeYear.china,0);
@@ -1037,6 +1167,29 @@ export default function Home() {
     const item = allCommodityRecords.find(record=>record.id===id);
     if (item) openCommodity(item);
   };
+  useEffect(() => {
+    const productId = new URLSearchParams(window.location.search).get("product");
+    if (!productId) return;
+    const item = allCommodityRecords.find(record=>record.id===productId);
+    if (!item) return;
+    const group = matrixGroups.find(entry=>entry.children.includes(productId));
+    if (group && groupChildren(group).length > 1) {
+      setExpandedGroups(current => new Set(current).add(group.id));
+    }
+    setSelected(item);
+    setSelectedSubitem(item.id);
+    window.history.replaceState(null,"",`${APP_BASE}/#commodity-${productId}`);
+    window.setTimeout(()=>document.getElementById(`commodity-${productId}`)?.scrollIntoView({behavior:"smooth",block:"center"}),0);
+  },[]);
+  const renderCommodityRow = (item: CommodityRecord) => (
+    <button id={`commodity-${item.id}`} className="commodity-row subitem-row" key={item.id} onClick={()=>openCommodity(item)} aria-label={`查看 ${item.name} 详情`}>
+      <span className="commodity-name"><b>{item.name}</b><small>{item.english}</small><code>HS 2022 · {codeLevelOf(item)} {hs8Of(item)}</code><em>{customsProfileOf(item)?`中国海关 HS8 ${customsProfileOf(item)!.hs8.map(code=>code.code).join(" / ")}`:"中国海关 HS8 待补充"}</em></span>
+      <span className="value-cell"><b>{formatB(item.completeYear.china)}</b></span>
+      <span className="value-cell"><b>{formatB(item.completeYear.world)}</b></span>
+      <span className="share-cell"><b>{item.completeYear.share.toFixed(1)}%</b><i><em style={{width:`${item.completeYear.share}%`}}/></i></span>
+      <span className="tag-cell">{item.controlled&&<i className="risk">管制筛查</i>}<small>{compactUsd(customsYearValue(customsProfileOf(item),"2025"))}</small></span>
+    </button>
+  );
   const selectedChildren = selected ? commoditySubitemsByParent[selected.id]??[] : [];
   const selectedRecord = selected && selectedChildren.length
     ? [selected,...selectedChildren].find(item=>item.id===selectedSubitem)??selected
@@ -1045,11 +1198,13 @@ export default function Home() {
   const selectedMonthly = selectedRecord ? monthlyTradeById[selectedRecord.id]??[] : [];
   const selectedAccuracy = selectedReport && selectedRecord ? reportAccuracyById[selectedRecord.id]??defaultReportAccuracy : null;
   const selectedPublicEvidence = selectedRecord ? publicEvidenceById[selectedRecord.id]??[] : [];
+  const selectedEnterpriseSlug = selectedRecord ? enterpriseProductAliasByCommodityId[selectedRecord.id] : "";
+  const selectedEnterpriseProduct = selectedEnterpriseSlug ? enterpriseProductsBySlug[selectedEnterpriseSlug] : undefined;
 
   return <main>
     <header className="topbar">
       <a className="brand" href="#top" aria-label="返回首页"><span className="brand-mark">依</span><span>中印供应链依赖图谱<small>INDIA × CHINA SUPPLY ATLAS</small></span></a>
-      <nav aria-label="主要导航"><a href="#matrix">依赖矩阵</a><a href="#fertilizer-focus">化肥专题</a><a href="#routes">第三国路径</a><a href="#sources">来源中心</a><a href="#reports">报告下载</a></nav>
+      <nav aria-label="主要导航"><a href="#matrix">依赖矩阵</a><a href="#routes">第三国路径</a><a href="#sources">来源中心</a><a href="#reports">报告下载</a></nav>
       <span className="snapshot"><i/> PUBLIC · 快照 {SNAPSHOT_DATE}</span>
     </header>
 
@@ -1058,17 +1213,50 @@ export default function Home() {
       <div className="hero-copy">
         <p className="eyebrow"><span>RESEARCH BRIEF / 02</span> 可审计供应链情报</p>
         <h1>中国-印度<br/><em>供应链依赖图谱</em></h1>
-        <p className="dek">从原材料、药物中间体到电力设备、工程机械与零配件，观察进口来源集中度、替代供应国，以及受管制物项的第三国路径信号。</p>
+        <details className="hero-conclusions" aria-label="首页结论摘要" open>
+          <summary className="hero-conclusions-summary">
+            <div><span>EXECUTIVE SUMMARY</span><strong>结论</strong></div>
+            <b>展开 / 收起 ↕</b>
+          </summary>
+          <div className="hero-conclusions-grid">
+          <article>
+            <span>01</span>
+            <h2>高依赖商品</h2>
+            <ul>
+              <li><a href="#commodity-battery" onClick={event=>focusMatrixCommodity("battery",event)}>锂离子蓄电池：85076000</a></li>
+              <li><a href="#commodity-semiconductor" onClick={event=>focusMatrixCommodity("semiconductor",event)}>未组装光伏电池：85414200</a></li>
+              <li><a href="#commodity-rareearth" onClick={event=>focusMatrixCommodity("rareearth",event)}>稀土金属及其混合物的化合物：284690</a></li>
+              <li><a href="#commodity-tunnel_843031" onClick={event=>focusMatrixCommodity("tunnel_843031",event)}>自推进隧道掘进机：84303130</a></li>
+              <li><a href="#commodity-tunnel_843039" onClick={event=>focusMatrixCommodity("tunnel_843039",event)}>非自推进采（截）煤机、凿岩机及隧道掘进机：84303900</a></li>
+              <li><a href="#commodity-earthmoving_dumptruck" onClick={event=>focusMatrixCommodity("earthmoving_dumptruck",event)}>非公路用货运机动自卸车：87041090 / 87041030</a></li>
+              <li><a href="#commodity-earthmoving_crane" onClick={event=>focusMatrixCommodity("earthmoving_crane",event)}>其他起重车及全路面起重车：870510</a></li>
+              <li><a href="#commodity-graphite" onClick={event=>focusMatrixCommodity("graphite",event)}>其他粉末或粉片天然石墨：25041099</a></li>
+            </ul>
+          </article>
+          <article>
+            <span>02</span>
+            <h2>需要重点关注的第三国贸易路径</h2>
+            <ul>
+              <li>中国 → 越南 → 印度</li>
+              <li>中国 → 阿联酋 → 印度</li>
+              <li>中国 → 新加坡 → 印度</li>
+              <li>中国 → 马来西亚 → 印度</li>
+              <li>中国 → 韩国 / 台湾 → 印度</li>
+            </ul>
+          </article>
+          </div>
+        </details>
         <div className="hero-actions"><a className="primary-btn" href="#matrix">进入依赖矩阵 <span>↗</span></a><a className="text-btn" href="#method">先读方法口径</a></div>
       </div>
       <div className="hero-panel">
+        <div className="audit-console-label"><span>SUPPLY AUDIT CONSOLE</span><b>{SNAPSHOT_DATE}</b></div>
         <div className="period-toggle" role="group" aria-label="数据时期"><button className={period==="annual"?"active":""} onClick={()=>setPeriod("annual")}>2025 全年数据</button><button className={period==="pulse"?"active":""} onClick={()=>setPeriod("pulse")}>2026 最新已公布数据</button></div>
         {period === "annual" ? <>
-          <div className="hero-metric"><span>{matrixCommodities.length} 个具体商品物项 · 从中国进口的金额占比</span><strong>{weightedShare.toFixed(1)}<small>%</small></strong><p>这些具体商品从中国进口的金额之和 ÷ 这些商品的进口总额。所有金额均按互不重叠的真实 HS6 物项计算，不使用补零八位码、代理口径或父级大类重复汇总；不是印度全经济总体依赖率。</p></div>
+          <div className="hero-metric"><span>{matrixCommodities.length} 个具体商品物项 · 从中国进口的金额占比</span><strong>{weightedShare.toFixed(1)}<small>%</small></strong></div>
           <div className="metric-quads"><div><span>从中国进口金额</span><strong>{formatB(chinaTotal)}</strong></div><div><span>这些商品的进口总额</span><strong>{formatB(worldTotal)}</strong></div><div><span>从中国进口占比超过一半</span><strong>{highCount}<small> 项</small></strong></div><div><span>对中国依赖最高的商品占比</span><strong>{highestShare.toFixed(1)}%</strong></div></div>
           <a className="panel-source" href={COMTRADE} target="_blank" rel="noreferrer"><span>SOURCE 01</span> UN Comtrade · 2025 · {CURRENT_HS_VERSION}（H6）↗</a>
         </> : <>
-          <div className="hero-metric pulse"><span>印度对华进口 · FY2025–26</span><strong>$131.63<small>B</small></strong><p>2025—26 整个财年的官方总量；与 2025 自然年商品矩阵分开展示。</p></div>
+          <div className="hero-metric pulse"><span>印度对华进口 · FY2025–26</span><strong>$131.63<small>B</small></strong></div>
           <div className="metric-quads"><div><span>对华出口</span><strong>$19.47B</strong></div><div><span>进口同比</span><strong>+16.03%</strong></div><div><span>2026 年 4 月进口同比</span><strong>+20.85%</strong></div><div><span>月度库可用至</span><strong>2026.05</strong></div></div>
           <a className="panel-source" href={TIA} target="_blank" rel="noreferrer"><span>SOURCE 02</span> India TIA / DGCI&S · 访问 {SNAPSHOT_DATE} ↗</a>
         </>}
@@ -1078,59 +1266,51 @@ export default function Home() {
     <section className="definition-strip" id="method"><span>01</span><div><strong>“依赖”指什么？</strong><p>同一时期、同一 HS 编码下，印度自中国进口额 ÷ 印度全球进口额。它衡量的是<strong>进口来源依赖</strong>，不等于印度国内消费或生产的总体依赖。</p></div><a href="#sources">查看完整口径 ↘</a></section>
 
     <section className="section matrix-section" id="matrix">
-      <div className="section-heading"><div><p>DEPENDENCY MATRIX / 2025</p><h2>重点商品依赖矩阵</h2></div><p>基于 2025 全年数据并统一采用 HS 2022（UN Comtrade H6）；矩阵中的 21 个条目均为互不重叠的真实 HS6 商品物项，不使用补零八位码、父级大类或代理口径。</p></div>
+      <div className="section-heading"><div><p>DEPENDENCY MATRIX / 2025</p><h2>重点商品依赖矩阵</h2></div></div>
       <div className="filter-shell">
         <div className="category-tabs" role="tablist" aria-label="行业筛选">{categories.map(item=><button key={item} role="tab" aria-selected={category===item} className={category===item?"active":""} onClick={()=>setCategory(item)}>{item}</button>)}</div>
         <div className="filters"><label className="search"><span>搜索商品 / 英文 / HS</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="例如：盾构、起重机、870510"/></label><label><span>最低对华占比 <b>{minShare}%</b></span><input type="range" min="0" max="90" step="5" value={minShare} onChange={e=>setMinShare(Number(e.target.value))}/></label><label><span>最低自华进口额 <b>{minValue===0?"不限":formatB(minValue)}</b></span><input type="range" min="0" max="5" step="0.25" value={minValue} onChange={e=>setMinValue(Number(e.target.value))}/></label><button className="reset" onClick={reset}>重置筛选</button></div>
       </div>
       <div className="matrix-meta source-only" aria-live="polite"><a href={COMTRADE} target="_blank" rel="noreferrer">UN Comtrade · 2025 · HS2022（H6）· 访问 {SNAPSHOT_DATE} ↗</a></div>
       <div className="commodity-table grouped-table">
-        {visibleGroups.map(group=>{const stats=groupStats(group.items);const expanded=expandedGroups.has(group.id);return <section className={`matrix-group ${expanded?"expanded":"collapsed"}`} key={group.id}>
+        {visibleGroups.map(group=>{if (group.items.length===1) return renderCommodityRow(group.items[0]); const stats=groupStats(group.items);const expanded=expandedGroups.has(group.id);return <section className={`matrix-group ${expanded?"expanded":"collapsed"}`} key={group.id}>
           <button className="matrix-group-head" type="button" onClick={()=>toggleGroup(group.id)} aria-expanded={expanded} aria-controls={`matrix-group-${group.id}`}>
-            <div><span>{group.english}</span><h3>{group.title}</h3><p>{group.description}</p></div>
-            <div><small>子项</small><strong>{group.items.length}</strong></div>
-            <div><small>本组从中国进口占比</small><strong>{stats.share.toFixed(1)}%</strong></div>
-            <div><small>中国海关出口额</small><strong>{compactUsd(stats.customs2025)}</strong><em>2025 · USD</em></div>
+            <div><span>{group.english}</span><h3>{group.title}</h3></div>
+            <div><strong>{group.items.length}</strong></div>
+            <div><strong>{stats.share.toFixed(1)}%</strong></div>
+            <div><strong>{compactUsd(stats.customs2025)}</strong></div>
             <span className="group-toggle">{expanded?"收起":"展开"} <i>{expanded?"−":"+"}</i></span>
           </button>
           {expanded&&<div className="matrix-group-items" id={`matrix-group-${group.id}`}>
-            {group.items.map(item=><button className="commodity-row subitem-row" key={item.id} onClick={()=>openCommodity(item)} aria-label={`查看 ${item.name} 详情`}><span className="commodity-name"><b>{item.name}</b><small>{item.english}</small><code>HS 2022 · {codeLevelOf(item)} {hs8Of(item)}</code><em>{customsProfileOf(item)?`中国海关 HS8 ${customsProfileOf(item)!.hs8.map(code=>code.code).join(" / ")}`:"中国海关 HS8 待补充"}</em></span><span className="value-cell"><b>{formatB(item.completeYear.china)}</b><small>2025 · CIF</small></span><span className="value-cell"><b>{formatB(item.completeYear.world)}</b><small>2025 · 全球</small></span><span className="share-cell"><b>{item.completeYear.share.toFixed(1)}%</b><i><em style={{width:`${item.completeYear.share}%`}}/></i></span><span className="tag-cell">{item.controlled&&<i className="risk">管制筛查</i>}<small>{compactUsd(customsYearValue(customsProfileOf(item),"2025"))}</small></span></button>)}
+            {group.items.map(item=>renderCommodityRow(item))}
           </div>}
         </section>})}
         {filtered.length===0&&<div className="empty-state"><strong>没有符合条件的商品</strong><p>降低阈值或清除搜索词后再试。</p><button onClick={reset}>恢复全部</button></div>}
       </div>
-      <p className="data-note">分类版本：HS 2022（UN Comtrade H6）。页面如实展示数据源中的六位编码，不补零、不冒充中国海关八位编码。单位：十亿美元，现价美元，印度进口通常按 CIF 计；父级专题仅用于导航和子项汇总，不计入矩阵总额。识别具体型号、受控技术参数或整机台数时，仍须再核对中国 HS8、产品规格和业务单证。</p>
     </section>
 
-    <section className="pulse-ribbon" aria-label="最新月度数据"><div><span>MONTHLY DATA UPDATE</span><strong>2026.05</strong></div><p>印度 TradeStat 月度库已更新至 2026 年 5 月；2026 年 4 月起部分 ITC HS 编码被撤销或重新分配。本版以 2025 全年数据作为可比基础，未核验的月度细项不填入代理值。</p><a href={TRADESTAT} target="_blank" rel="noreferrer">打开官方月度库 ↗</a></section>
+    <section className="pulse-ribbon" aria-label="最新月度数据"><div><span>MONTHLY DATA UPDATE</span><strong>2026.05</strong></div><a href={TRADESTAT} target="_blank" rel="noreferrer">打开官方月度库 ↗</a></section>
 
-    <section className="section fertilizer-focus" id="fertilizer-focus">
-      <div className="section-heading"><div><p>FERTILIZER FOCUS</p><h2>化肥专题</h2></div><p>将 HS31 总项与尿素、DAP、MOP、NPK 四个子项分开判读：总项观察整体暴露，子项用于核验具体采购、替代来源和第三国装运线索。</p></div>
-      <div className="fertilizer-grid">{fertilizerFocusIds.map((id,index)=>{const item = allCommodityRecords.find(record=>record.id===id)!;const accuracy = reportAccuracyById[id]??defaultReportAccuracy;return <article className="fertilizer-card" key={id}><button type="button" onClick={()=>openCommodityById(id)}><span>{String(index+1).padStart(2,"0")} / {codeLevelOf(item)} {hs8Of(item)}</span><h3>{item.name}</h3><p>{item.english}</p><strong>{item.completeYear.share.toFixed(1)}<small>%</small></strong><em>{accuracy.level}</em></button><a href={reportHref(id)} download>下载 Word 报告 ↗</a></article>})}</div>
-      <p className="data-note">化肥专题参考印度化肥部国别—品类附件、DGCI&S 直接/间接装运样本与 UN Comtrade 2025 HS2022 数据。财年数量、自然年金额和 HS8 企业单证应分开校验。</p>
-    </section>
-
-    <section className="section spotlight"><div className="section-heading"><div><p>EQUIPMENT FOCUS</p><h2>工程设备专题</h2></div><p>仅展示具有公开贸易金额的具体 HS6 物项；盾构机识别需另结合型号和项目资料，不以宽税目金额冒充整机金额。</p></div><div className="spotlight-grid">{["tunnel_843031","earthmoving_dumptruck","machineparts"].map((id,index)=>{const item=allCommodityRecords.find(x=>x.id===id)!;return <button className="spotlight-card" key={id} onClick={()=>openCommodity(item)}><span className="card-index">0{index+1} / {codeLevelOf(item)} {hs8Of(item)}</span><div className={`equipment-visual v${index+1}`} aria-hidden="true"><i/><i/><i/></div><p>{item.english}</p><h3>{item.name}</h3><strong className="big-share">{item.completeYear.share.toFixed(1)}<small>%</small></strong><span className="card-link">查看证据卡片 ↗</span></button>})}</div></section>
+    <section className="section spotlight"><div className="section-heading"><div><p>EQUIPMENT FOCUS</p><h2>工程设备专题</h2></div></div><div className="spotlight-grid">{["tunnel_843031","earthmoving_dumptruck","machineparts"].map((id,index)=>{const item=allCommodityRecords.find(x=>x.id===id)!;return <button className="spotlight-card" key={id} onClick={()=>openCommodity(item)}><span className="card-index">0{index+1} / {codeLevelOf(item)} {hs8Of(item)}</span><div className={`equipment-visual v${index+1}`} aria-hidden="true"><i/><i/><i/></div><p>{item.english}</p><h3>{item.name}</h3><strong className="big-share">{item.completeYear.share.toFixed(1)}<small>%</small></strong><span className="card-link">查看证据卡片 ↗</span></button>})}</div></section>
 
     <section className="section route-section" id="routes">
-      <div className="section-heading inverse"><div><p>ROUTE SIGNALS / SCREENING ONLY</p><h2>可能的第三国路径</h2></div><p>第一段采用中国海关出口统计（中国→中转国，美元），第二段采用公开报告国数据（中转国→印度），并展示印度自中国直接进口作为对照。统计信号不认定实际转口或违法。</p></div>
+      <div className="section-heading inverse"><div><p>ROUTE SIGNALS / SCREENING ONLY</p><h2>可能的第三国路径</h2></div></div>
       <div className="route-controls"><label><span>路径分段贸易额下限 <b>{formatM(routeValue)}</b></span><input type="range" min="0" max="3" step="0.1" value={routeValue} onChange={e=>setRouteValue(Number(e.target.value))}/></label><label><span>2026已公布/2025全年比例下限 <b>{routeGrowth}%</b></span><input type="range" min="0" max="100" step="5" value={routeGrowth} onChange={e=>setRouteGrowth(Number(e.target.value))}/></label><div><strong>{activeRoutes.length}</strong><span>条路径信号</span></div></div>
       <div className="route-list">{activeRoutes.map(route=><article className="route-card" key={route.id}><div className="route-title"><div><span>HS2022 H6 {route.hs} · {route.coverage}</span><h3>{route.product} / {route.hub}</h3></div><div className="route-title-actions"><em className={`reliability r-${route.reliability}`}>可靠性 {route.reliability}</em><a href={route.source} target="_blank" rel="noreferrer">数据源 ↗</a></div></div><div className="route-chain">{route.nodes.map((node,index)=><span key={`${route.id}-${node}-${index}`}><b className={index===0?"origin":index===route.nodes.length-1?"destination":"transit"}>{node}</b>{index<route.nodes.length-1&&<i>→</i>}</span>)}</div><div className="route-leg-list">{routeLegs(route).map(leg=><div key={`${route.id}-${leg.label}`}><span>{leg.label}</span><strong>{formatRouteValue(leg.values[0])} → {formatRouteValue(leg.values[1])}</strong><em>{routeComparisonLabel(leg.values)}</em></div>)}</div><p>中国→印度直接流：{formatRouteValue(route.directToIndia[0])} → {formatRouteValue(route.directToIndia[1])}（{routeComparisonLabel(route.directToIndia)}）</p><RouteProof route={route}/></article>)}</div>
-      <div className="route-subheading"><span>MULTI-NODE WATCHLIST</span><h3>两个中转国的待核验网络</h3><p>以下候选要求同一真实 HS6、同一年度窗口、三段双边贸易均可复核且同步上升。它们代表需要穿透核验的供应网络，不代表同一批货物依次经过全部节点。</p></div>
+      <div className="route-subheading"><span>MULTI-NODE WATCHLIST</span><h3>两个中转国的待核验网络</h3></div>
       <div className="route-list route-network-cards">{auditedRouteNetworks.map(route=><article className="route-card" key={route.id}><div className="route-title"><div><span>HS2022 H6 {route.hs} · {route.coverage} · 三段数据</span><h3>{route.product}</h3></div><div className="route-title-actions"><em className={`reliability r-${route.reliability}`}>可靠性 {route.reliability}</em><a href={route.source} target="_blank" rel="noreferrer">数据源 ↗</a></div></div><div className="route-chain">{route.nodes.map((node,index)=><span key={`${route.id}-${node}-${index}`}><b className={index===0?"origin":index===route.nodes.length-1?"destination":"transit"}>{node}</b>{index<route.nodes.length-1&&<i>→</i>}</span>)}</div><div className="route-leg-list">{route.legs.map(leg=><div key={`${route.id}-${leg.label}`}><span>{leg.label}</span><strong>{formatRouteValue(leg.values[0])} → {formatRouteValue(leg.values[1])}</strong><em>{routeComparisonLabel(leg.values)}</em></div>)}</div><p>中国→印度直接流：{formatRouteValue(route.directToIndia[0])} → {formatRouteValue(route.directToIndia[1])}（{routeComparisonLabel(route.directToIndia)}）</p><RouteProof route={route}/></article>)}</div>
       <aside className="route-case"><div><span>OFFICIAL CASE / 方法校验</span><h3>中国 → 斯里兰卡 → 印度：数字印刷版材查发案例</h3></div><p>印度蒙德拉海关裁决书记录了中国制造的 CTCP 数字印刷版材在科伦坡换装集装箱后运往印度，并以发票、原产地证书、进出提单、斯里兰卡海关材料和当事人陈述相互印证。该案例只用于说明“统计信号之后应如何闭环取证”，不代表本页上述商品发生了相同行为。</p><a href={CUSTOMS_CASE} target="_blank" rel="noreferrer">查看印度海关裁决书 ↗</a></aside>
       {activeRoutes.length===0&&<div className="route-empty"><span>∅</span><div><strong>当前阈值下没有路径信号</strong><p>这不代表不存在转口。默认阈值要求已公布分段贸易额均不低于 20 万美元、且 2026 已公布金额达到 2025 全年的一定比例；可继续降低阈值查看弱信号。</p><button onClick={()=>{setRouteValue(.1);setRouteGrowth(10)}}>查看弱信号</button></div></div>}
-      <div className="route-warning"><strong>判读边界</strong><p>2026 为已公布月份，不是全年；页面使用你导出的中国海关 HS8/HS6 出口数据交叉验证中国→中转国段，并与中转国对印度出口、印度自中国进口直接流对照。多节点路径表示需要核验的供应网络，不表示同一批货物依次经过所有国家；信号不是规避管制、非法转口或个案事实认定。</p></div>
     </section>
 
     <section className="section policy-section" id="policy"><details className="section-collapse"><summary className="section-heading collapse-heading"><div><p>CONTROL TIMELINE</p><h2>政策与管制时间线</h2></div><b>展开 ↕</b></summary><div className="timeline">{policies.map((item,index)=><a className="timeline-item" href={item.url} target="_blank" rel="noreferrer" key={item.date}><span>{item.date}</span><i>{String(index+1).padStart(2,"0")}</i><div><h3>{item.title} ↗</h3><p>{item.body}</p></div></a>)}</div><div className="control-ledger"><h3>可观察管制筛查表</h3>{controls.map(item=><a href={item.source} target="_blank" rel="noreferrer" key={item.referenceHs}><span>{item.referenceHs}</span><strong>{item.item}</strong><p>{item.parameters}</p><em>{item.status} ↗</em></a>)}</div></details></section>
 
-    <section className="section sources-section" id="sources"><details className="section-collapse"><summary className="section-heading collapse-heading"><div><p>SOURCE CENTER</p><h2>来源、口径与可复核性</h2></div><b>展开 ↕</b></summary><div className="source-grid">{sources.map(source=><a className="source-card" href={source.url} target="_blank" rel="noreferrer" key={source.tag}><span>{source.tag}</span><div><h3>{source.title} ↗</h3><p>{source.detail}</p></div><small>{source.period} · 访问 {SNAPSHOT_DATE}</small></a>)}</div><div className="method-grid"><div><span>M01</span><h3>怎么算</h3><p>同一时期、同一真实 HS6/HS8 商品物项：印度从中国进口金额 ÷ 印度该商品进口总额。父级大类不参与汇总，避免重复计算。</p></div><div><span>M02</span><h3>看哪个时间</h3><p>2025 全年数据用于横向比较；2026 年已公布月份只用于观察最新变化，不与全年金额混算。</p></div><div><span>M03</span><h3>编码怎么用</h3><p>公开来源可核验到 HS8 时使用真实 HS8；只能核验到 HS6 时如实显示 HS6，不补零、不冒充八位编码。</p></div><div><span>M04</span><h3>需要注意</h3><p>HS 编码不能替代出口管制技术参数、最终用户和最终用途判断；CIF/FOB、数量单位和分类差异也会影响结论。本工具不构成法律意见。</p></div></div></details></section>
+    <section className="section sources-section" id="sources"><details className="section-collapse"><summary className="section-heading collapse-heading"><div><p>SOURCE CENTER</p><h2>来源、口径与可复核性</h2></div><b>展开 ↕</b></summary><div className="source-grid">{visibleSources.map(source=><a className="source-card" href={source.url} target="_blank" rel="noreferrer" key={source.tag}><span>{source.tag}</span><div><h3>{source.title} ↗</h3><p>{source.detail}</p></div><small>{source.period} · 访问 {SNAPSHOT_DATE}</small></a>)}</div><div className="method-grid"><div><span>M01</span><h3>怎么算</h3><p>同一时期、同一真实 HS6/HS8 商品物项：印度从中国进口金额 ÷ 印度该商品进口总额。父级大类不参与汇总，避免重复计算。</p></div><div><span>M02</span><h3>看哪个时间</h3><p>2025 全年数据用于横向比较；2026 年已公布月份只用于观察最新变化，不与全年金额混算。</p></div><div><span>M03</span><h3>编码怎么用</h3><p>公开来源可核验到 HS8 时使用真实 HS8；只能核验到 HS6 时如实显示 HS6，不补零、不冒充八位编码。</p></div><div><span>M04</span><h3>需要注意</h3><p>HS 编码不能替代出口管制技术参数、最终用户和最终用途判断；CIF/FOB、数量单位和分类差异也会影响结论。本工具不构成法律意见。</p></div></div></details></section>
 
     <section className="section report-center" id="reports">
       <details className="section-collapse"><summary className="section-heading collapse-heading"><div><p>WORD REPORTS</p><h2>分析报告下载</h2></div><b>展开 ↕</b></summary>
       <div className="overall-report-card">
-        <div><span>MASTER REPORT / {REPORT_DATE}</span><h3>中国-印度供应链依赖图谱总分析报告</h3><p>汇总具体商品矩阵、化肥专题、工程设备专题、第三国路径边界、真实 HS6/HS8 统计编码和结论准确度分级。</p></div>
+        <div><span>MASTER REPORT / {REPORT_DATE}</span><h3>中国-印度供应链依赖图谱总分析报告</h3><p>汇总具体商品矩阵、工程设备专题、第三国路径边界、真实 HS6/HS8 统计编码和结论准确度分级。</p></div>
         <a href={reportHref("overall")} download>下载总报告 Word 版 ↗</a>
       </div>
       <div className="report-download-grid">{allCommodityRecords.map(item=><a href={reportHref(item.id)} download key={item.id}><span>{codeLevelOf(item)} {hs8Of(item)}</span><strong>{item.name}</strong><small>{statLevelOf(item)} · {item.completeYear.share.toFixed(1)}% · {reportAccuracyById[item.id]?.level??defaultReportAccuracy.level}</small></a>)}</div>
@@ -1151,6 +1331,12 @@ export default function Home() {
         <div className="drawer-tags"><code>{CURRENT_HS_VERSION} · {codeLevelOf(selectedRecord)} {hs8Of(selectedRecord)}</code><span>{statLevelOf(selectedRecord)}</span><span>{selectedRecord.category}</span>{selectedRecord.controlled&&<span className="risk">管制筛查</span>}</div>
         <div className="report-status"><span className={`evidence-level evidence-${selectedReport.evidence.replace("高概率","high").replace("已复核","verified").replace("中等偏低","medium-low").replace("中等","medium").replace("低","low")}`}>数据状态 · {selectedReport.evidence}</span><span>{selectedReport.status}</span></div>
         <div className="drawer-report-cover"><small>专项分析报告</small><h3>{selectedReport.title}</h3><p>{selectedReport.executive}</p></div>
+        {selectedEnterpriseProduct&&<a className="enterprise-entry-card" href={enterpriseHref(selectedEnterpriseProduct.slug)}>
+          <span>典型流向企业</span>
+          <strong>{selectedEnterpriseProduct.productName}</strong>
+          <p>查看该商品进入印度后的主要承接企业类型、代表企业、供应链角色与可复核来源。</p>
+          <b>进入企业页 ↗</b>
+        </a>}
         <a className="report-download-btn" href={reportHref(selectedRecord.id)} download>下载本商品 Word 分析报告 ↗</a>
         <div className="drawer-metrics"><div><span>印度自中国进口</span><strong>{formatB(selectedRecord.completeYear.china)}</strong></div><div><span>印度全球进口</span><strong>{formatB(selectedRecord.completeYear.world)}</strong></div><div><span>对华来源占比</span><strong>{selectedRecord.completeYear.share.toFixed(1)}%</strong></div></div>
         <a className="drawer-source" href={COMTRADE} target="_blank" rel="noreferrer">UN Comtrade · 2025 · {CURRENT_HS_VERSION}（H6）· 访问 {selectedRecord.accessedAt} ↗</a>
@@ -1176,7 +1362,6 @@ export default function Home() {
         <section>
           <div className="drawer-section-title"><h3>二、第三国路径与多节点网络</h3><span>筛查用途 · 非事实认定</span></div>
           {selectedReport.routes.length>0?<div className="route-network-list">{selectedReport.routes.map((route,index)=><article className="route-network" key={`${route.label}-${index}`}><div className="route-network-head"><span>PATH {String(index+1).padStart(2,"0")}</span><strong>{route.label}</strong></div><div className="route-nodes">{route.nodes.map((node,nodeIndex)=><span key={`${node}-${nodeIndex}`}><b className={nodeIndex===0?"origin":nodeIndex===route.nodes.length-1?"destination":"transit"}>{node}</b>{nodeIndex<route.nodes.length-1&&<i>→</i>}</span>)}</div><p>{route.basis}</p></article>)}</div>:<div className="no-route-report"><span>∅</span><div><strong>无公开量化转口路径</strong><p>现有来源未形成可复核的“中国—第三国—印度”金额、时间与产品口径闭环，因此不虚构中转国排序。</p></div></div>}
-          <p className="route-boundary"><strong>判读边界：</strong>{selectedReport.routeBoundary}</p>
         </section>
 
         {selectedReport.analysis.length>0&&<section>
