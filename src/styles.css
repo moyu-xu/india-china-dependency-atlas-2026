@@ -399,6 +399,7 @@ footer a { border-bottom: 1px solid #171916; padding-bottom: 5px; font-size: 13p
 .report-status { display: flex; flex-wrap: wrap; gap: 8px; margin: 24px 0 12px; }
 .report-status > span { border: 1px solid var(--line-strong); border-radius: 99px; padding: 7px 11px; color: var(--muted); font-size: 11px; }
 .report-status .evidence-medium { color: var(--teal-bright); border-color: var(--teal); }
+.report-status .evidence-high { color: var(--teal-bright); border-color: var(--teal); }
 .report-status .evidence-verified { color: var(--teal-bright); border-color: var(--teal); }
 .report-status .evidence-medium-low { color: var(--gold-bright); border-color: var(--gold); }
 .report-status .evidence-low { color: #df9185; border-color: var(--red); }
