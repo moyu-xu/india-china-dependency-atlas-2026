@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { MONTHLY_SOURCE_ACCESSED, MONTHLY_SOURCE_LABEL, MONTHLY_SOURCE_URL, monthlyTradeById, type MonthlyTradePoint } from "./data/monthlyTrade";
 import chinaCustomsHs8 from "./data/chinaCustomsHs8.json";
 import { enterpriseProductAliasByCommodityId, enterpriseProductsBySlug, typicalEnterprises, type TypicalEnterpriseProduct } from "./data/typicalEnterprises";
@@ -32,6 +32,16 @@ type PublicEvidenceEntry = {
   fact: string;
   meta: string;
   url: string;
+};
+type SensitiveUseEntry = {
+  label: "明确涉军" | "军民两用链条风险" | "战略基础设施相关" | "下游涉军场景";
+  item: string;
+  company: string;
+  case: string;
+  source: string;
+  url: string;
+  reliability: "高" | "中" | "低";
+  conclusion?: boolean;
 };
 
 type MappingReliability = "高" | "中" | "低";
@@ -283,6 +293,125 @@ const publicEvidenceById: Record<string, PublicEvidenceEntry[]> = {
   earthmoving_crane: engineeringVehiclePublicEvidence,
   earthmoving_mixer: engineeringVehiclePublicEvidence,
 };
+
+const sensitiveUseById: Record<string, SensitiveUseEntry[]> = {
+  rareearth: [
+    {
+      label: "明确涉军",
+      item: "稀土永磁体 / 稀土材料",
+      company: "印度汽车、航空航天、国防和电子制造供应链",
+      case: "印度官方材料将稀土永磁体列入电动汽车、可再生能源、电子、航空航天和国防等关键用途；印度媒体和评级机构同时披露，印度稀土磁体进口高度依赖中国来源。",
+      source: "PIB / Indian Express / CRISIL Ratings",
+      url: "https://www.pib.gov.in/PressReleasePage.aspx?PRID=2151394&lang=2&reg=48",
+      reliability: "高",
+      conclusion: true,
+    },
+  ],
+  pumps: [
+    {
+      label: "明确涉军",
+      item: "舰船泵、流体控制和海事保障系统",
+      company: "Kirloskar Brothers / 印度海军舰船平台",
+      case: "Kirloskar Marine & Defence 公开称其服务印度海军、海岸警卫队、陆军、空军和军工厂，产品用于航母、潜艇、护卫舰等军用海事平台；公开报道还提到其为 INS Taragiri 提供泵系统。",
+      source: "Kirloskar Brothers / ET Manufacturing",
+      url: "https://www.kirloskarpumps.com/business-verticals/marine-defence/",
+      reliability: "高",
+      conclusion: true,
+    },
+  ],
+  toolparts: [
+    {
+      label: "下游涉军场景",
+      item: "机床零部件、精密加工部件",
+      company: "印度军民两用零部件贸易企业",
+      case: "公开制裁报道显示，部分印度企业涉及电子、航空零部件、机床及零部件等军民两用物项贸易；该线索适合用于识别精密加工零部件的敏感下游，但需继续匹配具体 HS8、企业和批次。",
+      source: "The Indian Express / US sanctions reporting",
+      url: "https://indianexpress.com/article/business/electronic-aircraft-parts-most-indian-firms-on-list-supplied-dual-use-goods-9647775/lite/",
+      reliability: "中",
+      conclusion: true,
+    },
+  ],
+  machineparts: [
+    {
+      label: "军民两用链条风险",
+      item: "钻探、凿井和工程机械关键零部件",
+      company: "印度工程装备和重型制造企业",
+      case: "该类零部件可服务矿山、地下工程和重型装备维护。公开资料能证明下游工业与战略工程用途，涉军属性需结合项目业主、设备清单和最终用途文件进一步核验。",
+      source: "ICRA / 公开行业资料",
+      url: "https://www.icra.in/Newsletter/9168262a-c574-49de-ac1e-d3b3fcea580e/ICRA%20Insight_Sept2024/ICRA%20Insight_Sept2024.html",
+      reliability: "中",
+    },
+  ],
+  earthmoving_dumptruck: [
+    {
+      label: "战略基础设施相关",
+      item: "非公路用自卸车、矿山和工程车辆",
+      company: "BEML、JCB India 等印度重型装备承接企业",
+      case: "印度工程装备行业公开资料显示，矿山和工程机械关键部件仍依赖进口，中国是重要来源之一；部分承接企业同时服务基础设施、矿山和国防/公共工程场景。",
+      source: "DGTR / ICRA / 企业公开资料",
+      url: "https://dgtr.gov.in/sites/default/files/2024-08/WL%20NCV_29-9-2023.pdf",
+      reliability: "中",
+      conclusion: true,
+    },
+  ],
+  earthmoving_crane: [
+    {
+      label: "战略基础设施相关",
+      item: "汽车起重机和大型吊装设备",
+      company: "印度工程装备、港口、基础设施和公共工程承包企业",
+      case: "汽车起重机主要用于重大工程、港口、能源和基础设施项目，可能进入军民两用工程保障场景；公开贸易数据提示中国来源集中度较高，具体涉军项目需用采购合同和设备清单核验。",
+      source: "中国海关 HS8 数据 / UN Comtrade / 行业公开资料",
+      url: "https://comtradeplus.un.org/",
+      reliability: "中",
+    },
+  ],
+  tunnel_843031: [
+    {
+      label: "战略基础设施相关",
+      item: "自推进隧道掘进设备",
+      company: "印度地铁、高铁、地下工程项目业主和 EPC 承包商",
+      case: "印度媒体调查和后续报道显示，中国制造或中国供应链参与印度重大隧道工程设备供应，且中国海关清关变化曾影响供印设备交付；该线索属于战略基础设施装备依赖，不等同于军工采购。",
+      source: "The Indian Express",
+      url: "https://indianexpress.com/article/business/tunnel-boring-machines-machines-for-india-delayed-german-firm-flags-bottleneck-at-chinese-customs-9649284/",
+      reliability: "中",
+    },
+  ],
+  tunnel_843039: [
+    {
+      label: "战略基础设施相关",
+      item: "非自推进隧道掘进设备",
+      company: "印度地铁、高铁、地下工程项目业主和 EPC 承包商",
+      case: "公开项目证据支持中国制造基地和中国供应链参与印度隧道工程装备交付；该税号口径较宽，需要结合型号、项目和设备清单识别真实盾构或掘进设备。",
+      source: "The Indian Express",
+      url: "https://indianexpress.com/article/india/crucial-to-mumbai-infra-projects-tunnelling-machines-made-in-china-6471694/",
+      reliability: "中",
+    },
+  ],
+  battery: [
+    {
+      label: "军民两用链条风险",
+      item: "锂离子蓄电池、电池包和储能系统",
+      company: "印度电池、整车、两轮车和储能系统企业",
+      case: "公开来源可确认印度动力电池和储能链条对中国技术、材料和中游制造能力存在依赖；目前不把该线索写成印度军工直接采购中国电池。",
+      source: "PIB / Amara Raja / Moneycontrol",
+      url: "https://www.pib.gov.in/PressReleasePage.aspx?PRID=2241265&lang=1&reg=1",
+      reliability: "中",
+    },
+  ],
+  graphite: [
+    {
+      label: "军民两用链条风险",
+      item: "天然石墨和电池负极材料链条",
+      company: "电池材料、储能和新能源制造企业",
+      case: "石墨可进入电池负极材料和储能链条。公开资料足以支持关键材料风险提示，但尚不足以认定印度军工直接采购中国石墨。",
+      source: "PIB / 公开关键矿物资料",
+      url: "https://www.pib.gov.in/neWSite/erelcontent.aspx?lang=2&reg=48&relid=278713",
+      reliability: "低",
+    },
+  ],
+};
+
+const militaryConclusionSignals = Object.values(sensitiveUseById).flat().filter(item=>item.conclusion);
 
 const commodities: CommodityRecord[] = [
   { id: "battery", hs: "850760", name: "锂离子蓄电池", english: "Lithium-ion accumulators", category: "电子与电力", completeYear: annual(3.807624325, 4.083603910), latestPulse: pulse, alternatives: ["日本", "印度尼西亚", "韩国", "越南", "德国"], definition: "HS 850760：锂离子蓄电池，不包含铅酸蓄电池及其他化学体系。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
@@ -881,7 +1010,7 @@ const formatUsd = (value:number) => value >= 1_000_000_000 ? `$${(value/1_000_00
 const compactUsd = (value:number) => value ? formatUsd(value) : "—";
 const customsYearValue = (profile: CustomsHs6Profile | undefined, year:string) => profile?.annual?.[year]?.usd ?? 0;
 
-function CustomsTrend({months,label,ariaLabel}:{months: CustomsMonth[]; label:string; ariaLabel:string}) {
+const CustomsTrend = memo(function CustomsTrend({months,label,ariaLabel}:{months: CustomsMonth[]; label:string; ariaLabel:string}) {
   const width = 720;
   const height = 250;
   const plot = { left:56, right:18, top:24, bottom:45 };
@@ -903,7 +1032,7 @@ function CustomsTrend({months,label,ariaLabel}:{months: CustomsMonth[]; label:st
       <div className="monthly-legend"><span><i className="legend-customs"/>{label}</span></div>
     </div>
   </>;
-}
+});
 
 function TradeModeTrendCard({mode,scope,inWindow}:{mode: CustomsTradeMode; scope:string; inWindow:(period:string)=>boolean}) {
   const [open,setOpen] = useState(false);
@@ -1032,9 +1161,15 @@ const enterpriseStageOf = (companyName:string) => {
   if (["Ola Electric Mobility", "Maruti Suzuki India", "Tata Motors", "Mahindra Electric", "JCB India", "BEML", "National High Speed Rail Corporation Limited", "Mumbai Metro Rail Corporation", "Tata Projects", "L&T Construction", "Delhi Metro Rail Corporation"].includes(companyName)) return "下游";
   return "中游";
 };
+const enterpriseSensitiveCases = (product?: TypicalEnterpriseProduct) => {
+  if (!product) return [];
+  const ids = [product.productId, ...Object.entries(enterpriseProductAliasByCommodityId).filter(([,slug])=>slug===product.slug).map(([id])=>id)];
+  return Array.from(new Map(ids.flatMap(id=>sensitiveUseById[id]??[]).map(item=>[`${item.item}-${item.case}`,item] as const)).values());
+};
 
 function EnterpriseFlowPage({ product }: { product?: TypicalEnterpriseProduct }) {
   const active = product;
+  const sensitiveCases = enterpriseSensitiveCases(active);
   return <main className="enterprise-page">
     <header className="topbar">
       <a className="brand" href={`${APP_BASE}/`} aria-label="返回首页"><span className="brand-mark">依</span><span>中印供应链依赖图谱<small>INDIA × CHINA SUPPLY ATLAS</small></span></a>
@@ -1096,6 +1231,16 @@ function EnterpriseFlowPage({ product }: { product?: TypicalEnterpriseProduct })
             </div>
           </details>)}
         </div>
+        {sensitiveCases.length>0&&<section className="enterprise-sensitive">
+          <div className="section-heading compact-heading"><div><p>SENSITIVE USE CASES</p><h2>涉军/敏感用途公开案例</h2></div></div>
+          <div className="sensitive-case-grid">
+            {sensitiveCases.map((item,index)=><article key={`${active.slug}-sensitive-${index}`}>
+              <div><span className={`sensitive-label r-${item.reliability}`}>{item.label}</span><h3>{item.item}</h3></div>
+              <p>{item.case}</p>
+              <dl><div><dt>涉及企业或机构</dt><dd>{item.company}</dd></div><div><dt>来源</dt><dd><a href={item.url} target="_blank" rel="noreferrer">{item.source} ↗</a></dd></div></dl>
+            </article>)}
+          </div>
+        </section>}
         <section className="report-conclusion enterprise-conclusion">
           <div className="conclusion-heading"><div><span>JUDGEMENT</span><h3>综合判断</h3></div></div>
           <p>{active.conclusion}</p>
@@ -1184,9 +1329,9 @@ function Home() {
   const renderCommodityRow = (item: CommodityRecord) => (
     <button id={`commodity-${item.id}`} className="commodity-row subitem-row" key={item.id} onClick={()=>openCommodity(item)} aria-label={`查看 ${item.name} 详情`}>
       <span className="commodity-name"><b>{item.name}</b><small>{item.english}</small><code>HS 2022 · {codeLevelOf(item)} {hs8Of(item)}</code><em>{customsProfileOf(item)?`中国海关 HS8 ${customsProfileOf(item)!.hs8.map(code=>code.code).join(" / ")}`:"中国海关 HS8 待补充"}</em></span>
-      <span className="value-cell"><b>{formatB(item.completeYear.china)}</b></span>
-      <span className="value-cell"><b>{formatB(item.completeYear.world)}</b></span>
-      <span className="share-cell"><b>{item.completeYear.share.toFixed(1)}%</b><i><em style={{width:`${item.completeYear.share}%`}}/></i></span>
+      <span className="value-cell"><small>印度从中国进口</small><b>{formatB(item.completeYear.china)}</b></span>
+      <span className="value-cell"><small>印度进口总额</small><b>{formatB(item.completeYear.world)}</b></span>
+      <span className="share-cell"><small>从中国进口占比</small><b>{item.completeYear.share.toFixed(1)}%</b><i><em style={{width:`${item.completeYear.share}%`}}/></i></span>
       <span className="tag-cell">{item.controlled&&<i className="risk">管制筛查</i>}<small>{compactUsd(customsYearValue(customsProfileOf(item),"2025"))}</small></span>
     </button>
   );
@@ -1198,6 +1343,7 @@ function Home() {
   const selectedMonthly = selectedRecord ? monthlyTradeById[selectedRecord.id]??[] : [];
   const selectedAccuracy = selectedReport && selectedRecord ? reportAccuracyById[selectedRecord.id]??defaultReportAccuracy : null;
   const selectedPublicEvidence = selectedRecord ? publicEvidenceById[selectedRecord.id]??[] : [];
+  const selectedSensitiveUse = selectedRecord ? sensitiveUseById[selectedRecord.id]??[] : [];
   const selectedEnterpriseSlug = selectedRecord ? enterpriseProductAliasByCommodityId[selectedRecord.id] : "";
   const selectedEnterpriseProduct = selectedEnterpriseSlug ? enterpriseProductsBySlug[selectedEnterpriseSlug] : undefined;
 
@@ -1235,6 +1381,13 @@ function Home() {
           </article>
           <article>
             <span>02</span>
+            <h2>明确涉军物项</h2>
+            <ul>
+              {militaryConclusionSignals.map((item,index)=><li key={`military-signal-${index}`}><a href={item.item.includes("稀土") ? "#commodity-rareearth" : item.item.includes("泵") ? "#commodity-pumps" : item.item.includes("机床") ? "#commodity-toolparts" : "#commodity-earthmoving_dumptruck"} onClick={event=>focusMatrixCommodity(item.item.includes("稀土") ? "rareearth" : item.item.includes("泵") ? "pumps" : item.item.includes("机床") ? "toolparts" : "earthmoving_dumptruck",event)}>{item.item}：{item.label}</a></li>)}
+            </ul>
+          </article>
+          <article>
+            <span>03</span>
             <h2>需要重点关注的第三国贸易路径</h2>
             <ul>
               <li>中国 → 越南 → 印度</li>
@@ -1297,9 +1450,6 @@ function Home() {
       <div className="section-heading inverse"><div><p>ROUTE SIGNALS / SCREENING ONLY</p><h2>可能的第三国路径</h2></div></div>
       <div className="route-controls"><label><span>路径分段贸易额下限 <b>{formatM(routeValue)}</b></span><input type="range" min="0" max="3" step="0.1" value={routeValue} onChange={e=>setRouteValue(Number(e.target.value))}/></label><label><span>2026已公布/2025全年比例下限 <b>{routeGrowth}%</b></span><input type="range" min="0" max="100" step="5" value={routeGrowth} onChange={e=>setRouteGrowth(Number(e.target.value))}/></label><div><strong>{activeRoutes.length}</strong><span>条路径信号</span></div></div>
       <div className="route-list">{activeRoutes.map(route=><article className="route-card" key={route.id}><div className="route-title"><div><span>HS2022 H6 {route.hs} · {route.coverage}</span><h3>{route.product} / {route.hub}</h3></div><div className="route-title-actions"><em className={`reliability r-${route.reliability}`}>可靠性 {route.reliability}</em><a href={route.source} target="_blank" rel="noreferrer">数据源 ↗</a></div></div><div className="route-chain">{route.nodes.map((node,index)=><span key={`${route.id}-${node}-${index}`}><b className={index===0?"origin":index===route.nodes.length-1?"destination":"transit"}>{node}</b>{index<route.nodes.length-1&&<i>→</i>}</span>)}</div><div className="route-leg-list">{routeLegs(route).map(leg=><div key={`${route.id}-${leg.label}`}><span>{leg.label}</span><strong>{formatRouteValue(leg.values[0])} → {formatRouteValue(leg.values[1])}</strong><em>{routeComparisonLabel(leg.values)}</em></div>)}</div><p>中国→印度直接流：{formatRouteValue(route.directToIndia[0])} → {formatRouteValue(route.directToIndia[1])}（{routeComparisonLabel(route.directToIndia)}）</p><RouteProof route={route}/></article>)}</div>
-      <div className="route-subheading"><span>MULTI-NODE WATCHLIST</span><h3>两个中转国的待核验网络</h3></div>
-      <div className="route-list route-network-cards">{auditedRouteNetworks.map(route=><article className="route-card" key={route.id}><div className="route-title"><div><span>HS2022 H6 {route.hs} · {route.coverage} · 三段数据</span><h3>{route.product}</h3></div><div className="route-title-actions"><em className={`reliability r-${route.reliability}`}>可靠性 {route.reliability}</em><a href={route.source} target="_blank" rel="noreferrer">数据源 ↗</a></div></div><div className="route-chain">{route.nodes.map((node,index)=><span key={`${route.id}-${node}-${index}`}><b className={index===0?"origin":index===route.nodes.length-1?"destination":"transit"}>{node}</b>{index<route.nodes.length-1&&<i>→</i>}</span>)}</div><div className="route-leg-list">{route.legs.map(leg=><div key={`${route.id}-${leg.label}`}><span>{leg.label}</span><strong>{formatRouteValue(leg.values[0])} → {formatRouteValue(leg.values[1])}</strong><em>{routeComparisonLabel(leg.values)}</em></div>)}</div><p>中国→印度直接流：{formatRouteValue(route.directToIndia[0])} → {formatRouteValue(route.directToIndia[1])}（{routeComparisonLabel(route.directToIndia)}）</p><RouteProof route={route}/></article>)}</div>
-      <aside className="route-case"><div><span>OFFICIAL CASE / 方法校验</span><h3>中国 → 斯里兰卡 → 印度：数字印刷版材查发案例</h3></div><p>印度蒙德拉海关裁决书记录了中国制造的 CTCP 数字印刷版材在科伦坡换装集装箱后运往印度，并以发票、原产地证书、进出提单、斯里兰卡海关材料和当事人陈述相互印证。该案例只用于说明“统计信号之后应如何闭环取证”，不代表本页上述商品发生了相同行为。</p><a href={CUSTOMS_CASE} target="_blank" rel="noreferrer">查看印度海关裁决书 ↗</a></aside>
       {activeRoutes.length===0&&<div className="route-empty"><span>∅</span><div><strong>当前阈值下没有路径信号</strong><p>这不代表不存在转口。默认阈值要求已公布分段贸易额均不低于 20 万美元、且 2026 已公布金额达到 2025 全年的一定比例；可继续降低阈值查看弱信号。</p><button onClick={()=>{setRouteValue(.1);setRouteGrowth(10)}}>查看弱信号</button></div></div>}
     </section>
 
@@ -1328,7 +1478,7 @@ function Home() {
         {selectedChildren.length>0&&<div className="commodity-subnav" role="tablist" aria-label={`${selected.name}子项`}>
           {[selected,...selectedChildren].map((item,index)=><button key={item.id} role="tab" aria-selected={selectedRecord.id===item.id} className={selectedRecord.id===item.id?"active":""} onClick={()=>setSelectedSubitem(item.id)}><small>{index===0?"总览":`${codeLevelOf(item)} ${hs8Of(item)}`}</small><strong>{item.name}</strong></button>)}
         </div>}
-        <div className="drawer-tags"><code>{CURRENT_HS_VERSION} · {codeLevelOf(selectedRecord)} {hs8Of(selectedRecord)}</code><span>{statLevelOf(selectedRecord)}</span><span>{selectedRecord.category}</span>{selectedRecord.controlled&&<span className="risk">管制筛查</span>}</div>
+        <div className="drawer-tags"><code>{CURRENT_HS_VERSION} · {codeLevelOf(selectedRecord)} {hs8Of(selectedRecord)}</code><span>{statLevelOf(selectedRecord)}</span><span>{selectedRecord.category}</span>{selectedRecord.controlled&&<span className="risk">管制筛查</span>}{selectedSensitiveUse.map(item=><span className={`sensitive-label r-${item.reliability}`} key={`${selectedRecord.id}-${item.item}`}>{item.label}</span>)}</div>
         <div className="report-status"><span className={`evidence-level evidence-${selectedReport.evidence.replace("高概率","high").replace("已复核","verified").replace("中等偏低","medium-low").replace("中等","medium").replace("低","low")}`}>数据状态 · {selectedReport.evidence}</span><span>{selectedReport.status}</span></div>
         <div className="drawer-report-cover"><small>专项分析报告</small><h3>{selectedReport.title}</h3><p>{selectedReport.executive}</p></div>
         {selectedEnterpriseProduct&&<a className="enterprise-entry-card" href={enterpriseHref(selectedEnterpriseProduct.slug)}>
@@ -1354,6 +1504,19 @@ function Home() {
                 <span>{String(index+1).padStart(2,"0")}</span>
                 <div><h4>{item.source}</h4><p>{item.fact}</p><small>{item.meta}</small></div>
                 <a href={item.url} target="_blank" rel="noreferrer">原文 ↗</a>
+              </article>)}
+            </div>
+          </details>
+        </section>}
+
+        {selectedSensitiveUse.length>0&&<section>
+          <details className="public-evidence sensitive-evidence" open={false}>
+            <summary><div><h3>涉军/敏感用途公开线索</h3><span>{selectedSensitiveUse.length} 条案例</span></div><b>展开 ↕</b></summary>
+            <div className="sensitive-case-grid drawer-sensitive-grid">
+              {selectedSensitiveUse.map((item,index)=><article key={`${selectedRecord.id}-sensitive-${index}`}>
+                <div><span className={`sensitive-label r-${item.reliability}`}>{item.label}</span><h4>{item.item}</h4></div>
+                <p>{item.case}</p>
+                <dl><div><dt>涉及企业或机构</dt><dd>{item.company}</dd></div><div><dt>来源</dt><dd><a href={item.url} target="_blank" rel="noreferrer">{item.source} ↗</a></dd></div></dl>
               </article>)}
             </div>
           </details>
