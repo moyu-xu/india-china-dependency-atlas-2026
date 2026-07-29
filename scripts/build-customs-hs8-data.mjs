@@ -7,6 +7,8 @@ const outputPath = path.join(root, "src", "data", "chinaCustomsHs8.json");
 const sourceFiles = [
   "E:/下载/数据导出.csv",
   "E:/下载/数据导出 (1).csv",
+  "E:/下载/数据导出 (4).csv",
+  "E:/下载/数据导出 (5).csv",
 ];
 
 function parseCsv(text) {
@@ -169,7 +171,7 @@ for (const [hs6, group] of [...hs6Map].sort(([a], [b]) => a.localeCompare(b))) {
 const output = {
   sourceLabel: "海关总署统计网",
   sourceUrl: "http://stats.customs.gov.cn/",
-  accessedAt: "2026-07-24",
+  accessedAt: "2026-07-28",
   flow: "中国出口至印度",
   partnerCode: "111",
   partnerName: "印度",
