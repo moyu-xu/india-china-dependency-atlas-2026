@@ -864,6 +864,7 @@ const sources = [
   { tag:"IN", title:"印度 DGCI&S TradeStat", detail:"月度库已更新至 2026 年 5 月，最后更新 2026-07-15；2026 年 4 月起部分 ITC HS 编码调整。", period:"2018-01—2026-05", url:TRADESTAT },
   { tag:"TIA", title:"印度贸易情报与分析门户", detail:"FY2025–26 对华进口 1,316.3 亿美元、出口 194.7 亿美元；来源为 DGCIS。", period:"FY2025–26", url:TIA },
   { tag:"UN", title:"UN Comtrade API · HS 2022", detail:"2025 矩阵与 2024-12 后月度记录均核验为 classificationCode H6（HS 2022）；月度请求范围至 2026 年 6 月，其中 2026 年 4—6 月尚未发布，页面明确留空。", period:"2021—2025 / 月度请求至 2026-06", url:COMTRADE },
+  { tag:"TSP", title:"外贸公社（TradeSparq）", detail:"用于企业与贸易流向线索核验；具体贸易记录、进口商和供应链关系仍需与海关数据及企业公开资料交叉确认。", period:"按平台可查询范围", url:"https://console.tradesparq.com/" },
   { tag:"FERT", title:"印度化肥部国别—品类附件", detail:"尿素、DAP、MOP、NPK 的财年进口量、对华份额、库存及长期采购协议；与自然年价值口径分开展示。", period:"FY2020–21—FY2025–26", url:"https://sansad.in/getFile/loksabhaquestions/annex/187/AU5699_atvOoH.pdf?source=pqals" },
   { tag:"ROUTE", title:"DGCI&S 化肥直接/间接装运专题", detail:"官方样本显示中国原产化肥 99.9% 直接自中国装运、0.1% 经其他国家装运。", period:"2021-04—2022-02", url:"https://www.dgciskol.gov.in/writereaddata/Downloads/20220504100946Import_from_China_Apr_Feb_2021_22.pdf" },
   { tag:"TBM", title:"中国铁建重工孟买盾构项目资料", detail:"制造商项目资料记录长沙制造、上海装船并直接发往孟买，并披露此前向班加罗尔交付 4 台泥水平衡盾构机。", period:"2020-03", url:"https://en.sasac.gov.cn/2020/03/25/c_4298.htm" },
@@ -1155,21 +1156,8 @@ function ChinaCustomsHs8Mirror({ item }: { item: CommodityRecord }) {
   </div>;
 }
 
-const enterpriseStageOf = (companyName:string) => {
-  if (["Reliance New Energy"].includes(companyName)) return "上游";
-  if (["Amara Raja Energy & Mobility", "Tata AutoComp Systems", "Exide Industries", "Sona Comstar", "Uno Minda", "Lucas TVS", "L&T Construction & Mining Machinery", "Action Construction Equipment", "Tata Hitachi", "SANY India", "Afcons Infrastructure"].includes(companyName)) return "中游";
-  if (["Ola Electric Mobility", "Maruti Suzuki India", "Tata Motors", "Mahindra Electric", "JCB India", "BEML", "National High Speed Rail Corporation Limited", "Mumbai Metro Rail Corporation", "Tata Projects", "L&T Construction", "Delhi Metro Rail Corporation"].includes(companyName)) return "下游";
-  return "中游";
-};
-const enterpriseSensitiveCases = (product?: TypicalEnterpriseProduct) => {
-  if (!product) return [];
-  const ids = [product.productId, ...Object.entries(enterpriseProductAliasByCommodityId).filter(([,slug])=>slug===product.slug).map(([id])=>id)];
-  return Array.from(new Map(ids.flatMap(id=>sensitiveUseById[id]??[]).map(item=>[`${item.item}-${item.case}`,item] as const)).values());
-};
-
 function EnterpriseFlowPage({ product }: { product?: TypicalEnterpriseProduct }) {
   const active = product;
-  const sensitiveCases = enterpriseSensitiveCases(active);
   return <main className="enterprise-page">
     <header className="topbar">
       <a className="brand" href={`${APP_BASE}/`} aria-label="返回首页"><span className="brand-mark">依</span><span>中印供应链依赖图谱<small>INDIA × CHINA SUPPLY ATLAS</small></span></a>
@@ -1198,49 +1186,39 @@ function EnterpriseFlowPage({ product }: { product?: TypicalEnterpriseProduct })
             </div>
           </article>
         </div>
-        <p className="enterprise-type-note">该商品在印度主要流向以下类型企业：</p>
+        <p className="enterprise-type-note">该商品在印度有流向以下类型企业：</p>
         <div className="enterprise-type-grid">
           {active.enterpriseTypes.map((item,index)=><span key={item}><b>{String(index+1).padStart(2,"0")}</b>{item}</span>)}
         </div>
         <div className="enterprise-card-grid">
-          {active.enterprises.map(company=><details className="enterprise-card" key={company.companyName}>
+          {active.enterprises.filter(company=>company.militaryStatus).map(company=><details className="enterprise-card" key={company.companyName}>
             <summary>
               <div>
-                <span>{enterpriseStageOf(company.companyName)}</span>
+                <span>{company.militaryStatus}</span>
                 <h3>{company.chineseName ?? company.companyName}</h3>
                 <p>{company.englishName}</p>
               </div>
               <b>展开 ↕</b>
             </summary>
             <div className="enterprise-card-body">
-              <div className="enterprise-tags"><span>{company.industry}</span><span>{company.ownership}</span><span>{company.supplyChainRole}</span></div>
+              <div className="enterprise-tags"><span className="enterprise-military-tag">{company.militaryStatus}</span><span>{company.industry}</span><span>{company.ownership}</span><span>{company.supplyChainRole}</span></div>
               <dl>
                 <div><dt>主营业务</dt><dd>{company.business}</dd></div>
                 <div><dt>商品用途</dt><dd>{company.productUsage}</dd></div>
                 <div><dt>供应链关系</dt><dd>{company.supplyChainRelation}</dd></div>
                 <div><dt>典型案例</dt><dd>{company.caseStudy}</dd></div>
               </dl>
-              <div className="enterprise-source-list">
+              {company.sources.length>0&&<div className="enterprise-source-list">
                 <h4>来源</h4>
                 {company.sources.filter(source=>source.type!=="用户报告" && source.institution!=="用户提供研究报告").map((source,index)=><article key={`${company.companyName}-${source.title}-${index}`}>
                   <span>{source.type}</span>
                   <div><strong>{source.institution}</strong><p>{source.title}{source.published ? `（${source.published}）` : ""}</p></div>
                   {source.url ? <a href={source.url} target="_blank" rel="noreferrer">原始来源 ↗</a> : <em>用户提供报告</em>}
                 </article>)}
-              </div>
+              </div>}
             </div>
           </details>)}
         </div>
-        {sensitiveCases.length>0&&<section className="enterprise-sensitive">
-          <div className="section-heading compact-heading"><div><p>SENSITIVE USE CASES</p><h2>涉军/敏感用途公开案例</h2></div></div>
-          <div className="sensitive-case-grid">
-            {sensitiveCases.map((item,index)=><article key={`${active.slug}-sensitive-${index}`}>
-              <div><span className={`sensitive-label r-${item.reliability}`}>{item.label}</span><h3>{item.item}</h3></div>
-              <p>{item.case}</p>
-              <dl><div><dt>涉及企业或机构</dt><dd>{item.company}</dd></div><div><dt>来源</dt><dd><a href={item.url} target="_blank" rel="noreferrer">{item.source} ↗</a></dd></div></dl>
-            </article>)}
-          </div>
-        </section>}
         <section className="report-conclusion enterprise-conclusion">
           <div className="conclusion-heading"><div><span>JUDGEMENT</span><h3>综合判断</h3></div></div>
           <p>{active.conclusion}</p>
@@ -1347,12 +1325,24 @@ function Home() {
   const selectedEnterpriseSlug = selectedRecord ? enterpriseProductAliasByCommodityId[selectedRecord.id] : "";
   const selectedEnterpriseProduct = selectedEnterpriseSlug ? enterpriseProductsBySlug[selectedEnterpriseSlug] : undefined;
 
-  return <main>
+  return <main className="atlas-workspace">
     <header className="topbar">
       <a className="brand" href="#top" aria-label="返回首页"><span className="brand-mark">依</span><span>中印供应链依赖图谱<small>INDIA × CHINA SUPPLY ATLAS</small></span></a>
       <nav aria-label="主要导航"><a href="#matrix">依赖矩阵</a><a href="#routes">第三国路径</a><a href="#sources">来源中心</a><a href="#reports">报告下载</a></nav>
       <span className="snapshot"><i/> PUBLIC · 快照 {SNAPSHOT_DATE}</span>
     </header>
+
+    <aside className="workspace-rail" aria-label="研究工作台导航">
+      <a className="workspace-home" href="#top"><span>01</span><strong>总览</strong></a>
+      <a href="#matrix"><span>02</span><strong>商品依赖</strong></a>
+      <a href="#routes"><span>03</span><strong>路径核验</strong></a>
+      <a href="#policy"><span>04</span><strong>政策管制</strong></a>
+      <a href="#sources"><span>05</span><strong>数据来源</strong></a>
+      <a href="#reports"><span>06</span><strong>报告归档</strong></a>
+      <div className="workspace-rail-note"><span>RESEARCH MODE</span><p>商品、路径与企业线索均可交叉查看。</p></div>
+    </aside>
+
+    <div className="workspace-canvas">
 
     <section className="hero" id="top">
       <div className="hero-grid" aria-hidden="true"/>
@@ -1468,6 +1458,7 @@ function Home() {
     </section>
 
     <footer><div><strong>中印供应链依赖图谱</strong><p>公开研究工具 · 静态数据快照 · 无需登录</p></div><div><span>快照生成</span><b>{SNAPSHOT_DATE}</b></div><a href="#top">回到顶部 ↑</a></footer>
+    </div>
 
     {selected&&selectedRecord&&selectedReport&&<div className="drawer-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)setSelected(null)}}>
       <aside className="detail-drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
@@ -1478,9 +1469,7 @@ function Home() {
         {selectedChildren.length>0&&<div className="commodity-subnav" role="tablist" aria-label={`${selected.name}子项`}>
           {[selected,...selectedChildren].map((item,index)=><button key={item.id} role="tab" aria-selected={selectedRecord.id===item.id} className={selectedRecord.id===item.id?"active":""} onClick={()=>setSelectedSubitem(item.id)}><small>{index===0?"总览":`${codeLevelOf(item)} ${hs8Of(item)}`}</small><strong>{item.name}</strong></button>)}
         </div>}
-        <div className="drawer-tags"><code>{CURRENT_HS_VERSION} · {codeLevelOf(selectedRecord)} {hs8Of(selectedRecord)}</code><span>{statLevelOf(selectedRecord)}</span><span>{selectedRecord.category}</span>{selectedRecord.controlled&&<span className="risk">管制筛查</span>}{selectedSensitiveUse.map(item=><span className={`sensitive-label r-${item.reliability}`} key={`${selectedRecord.id}-${item.item}`}>{item.label}</span>)}</div>
-        <div className="report-status"><span className={`evidence-level evidence-${selectedReport.evidence.replace("高概率","high").replace("已复核","verified").replace("中等偏低","medium-low").replace("中等","medium").replace("低","low")}`}>数据状态 · {selectedReport.evidence}</span><span>{selectedReport.status}</span></div>
-        <div className="drawer-report-cover"><small>专项分析报告</small><h3>{selectedReport.title}</h3><p>{selectedReport.executive}</p></div>
+        <div className="drawer-report-cover"><small>专项分析报告</small><h3>{selectedReport.title}</h3></div>
         {selectedEnterpriseProduct&&<a className="enterprise-entry-card" href={enterpriseHref(selectedEnterpriseProduct.slug)}>
           <span>典型流向企业</span>
           <strong>{selectedEnterpriseProduct.productName}</strong>
@@ -1538,14 +1527,12 @@ function Home() {
         <section className="report-conclusion">
           <div className="conclusion-heading"><div><span>CONCLUSION</span><h3>四、结论</h3></div>{selectedAccuracy&&<strong className={`accuracy ${selectedAccuracy.level==="高概率"?"accuracy-high":selectedAccuracy.level==="低概率"?"accuracy-low":"accuracy-inference"}`}>准确度 · {selectedAccuracy.level}</strong>}</div>
           <p>{selectedReport.conclusion}</p>
-          {selectedAccuracy&&<small className="accuracy-reason">判定依据：{selectedAccuracy.reason}</small>}
         </section>
 
         <section>
           <h3>五、后续监测重点</h3>
           <div className="monitor-grid">{selectedReport.monitoring.map((item,index)=><div key={item}><span>0{index+1}</span><p>{item}</p></div>)}</div>
         </section>
-        <p className="fineprint">数据单位为现价美元；数值经过十亿美元换算和显示舍入，比例使用未舍入值计算。报告结论基于公开来源，须结合 HS6/8、BOM、原产地与企业级单证复核。</p>
       </aside>
     </div>}
   </main>;

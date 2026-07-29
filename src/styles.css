@@ -3577,4 +3577,397 @@ footer {
   }
 }
 
+/* Supply-chain dossier redesign: a quiet research surface with one dark evidence-map moment. */
+:root {
+  --bg: #f2f0eb;
+  --surface: #fbfaf7;
+  --surface-soft: #e8e6e0;
+  --navy: #172238;
+  --ink: #172238;
+  --text: #27364a;
+  --muted: #56677a;
+  --faint: #6b7a89;
+  --accent: #896a42;
+  --accent-2: #a48458;
+  --gold: #896a42;
+  --gold-bright: #b08d5d;
+  --teal: #3f6b5c;
+  --teal-bright: #4d638b;
+  --china: #8e4e50;
+  --india: #4d638b;
+  --third: #78909e;
+  --line: rgba(23,34,56,.10);
+  --line-strong: rgba(23,34,56,.17);
+  --dark-text: #f7f4ee;
+  --dark-muted: rgba(247,244,238,.78);
+  --dark-faint: rgba(247,244,238,.62);
+  --dark-gold: #d1b17b;
+  --dark-teal: #b4d3cd;
+}
+
+html { background: var(--bg); }
+body { color: var(--text); font-family: "Noto Sans SC", "Source Han Sans SC", system-ui, sans-serif; }
+main { background: linear-gradient(180deg, #f7f6f2 0%, var(--bg) 42%, #eeece6 100%) !important; }
+
+/* Clear focus and readable utility text across the entire research interface. */
+:where(a, button, input):focus-visible { outline: 3px solid rgba(77,99,139,.58) !important; outline-offset: 3px; }
+:where(.section-heading > div > p, .eyebrow, .audit-console-label, .card-index, .source-card > span, .report-download-grid span, .timeline-item > span) {
+  font-family: "IBM Plex Mono", "JetBrains Mono", ui-monospace, monospace !important;
+  font-weight: 700 !important;
+  letter-spacing: .1em !important;
+}
+
+/* Navigation behaves as a calm research index rather than a console toolbar. */
+.topbar { min-height: 76px; padding-inline: clamp(20px,5vw,80px); background: #172238 !important; border-bottom-color: rgba(247,244,238,.14) !important; }
+.topbar nav a, .snapshot, .brand small { color: rgba(247,244,238,.76) !important; font-size: 14px !important; }
+.topbar nav a:hover { color: #fff !important; border-color: rgba(209,177,123,.45) !important; background: rgba(255,255,255,.06) !important; }
+.brand { color: #fff !important; }
+.brand-mark { background: var(--accent) !important; }
+
+/* Thesis first: the home page becomes a dark evidence-map, with quiet data beneath. */
+.hero {
+  background:
+    radial-gradient(circle at 78% 22%, rgba(77,99,139,.34), transparent 18%),
+    linear-gradient(90deg, rgba(247,244,238,.055) 1px, transparent 1px),
+    linear-gradient(rgba(247,244,238,.045) 1px, transparent 1px),
+    linear-gradient(132deg, #111b2d 0%, #172238 57%, #1c2d43 100%) !important;
+  background-size: auto, 76px 76px, 76px 76px, auto !important;
+  border: 0 !important;
+}
+.hero-grid, .hero:after { opacity: 0 !important; }
+.hero-copy { max-width: 1320px; width: 100%; margin: 0 auto; padding: clamp(76px,10vw,138px) clamp(24px,7vw,108px) 58px !important; min-height: 0 !important; }
+.hero .eyebrow { color: var(--dark-gold) !important; font-size: 13px !important; }
+.hero h1, .hero h1 em { color: #f7f4ee !important; font-family: "Noto Serif SC", "Source Han Serif SC", serif !important; }
+.hero h1 { max-width: 980px; font-size: clamp(52px,7.2vw,94px) !important; line-height: .98 !important; }
+.hero h1 em { color: #d7c093 !important; }
+.hero .dek, .hero .text-btn { color: var(--dark-muted) !important; font-size: 17px !important; }
+.hero-actions { margin-top: 30px !important; }
+.primary-btn { border-radius: 8px !important; background: var(--accent) !important; color: #fff !important; box-shadow: none !important; }
+.primary-btn:hover { background: var(--accent-2) !important; transform: translateY(-1px); }
+
+.hero-conclusions { max-width: 1180px !important; margin-top: 36px !important; border-color: rgba(247,244,238,.13) !important; border-radius: 12px !important; background: rgba(10,19,33,.32) !important; box-shadow: none !important; }
+.hero-conclusions-summary { padding: 19px 24px !important; }
+.hero-conclusions-summary span { color: var(--dark-gold) !important; }
+.hero-conclusions-summary strong, .hero-conclusions-summary b { color: #f7f4ee !important; }
+.hero-conclusions-grid { grid-template-columns: repeat(3,minmax(0,1fr)) !important; gap: 0 !important; }
+.hero-conclusions article { min-height: 210px; padding: 24px 26px !important; border-color: rgba(247,244,238,.11) !important; background: transparent !important; }
+.hero-conclusions article > span { color: var(--dark-gold) !important; }
+.hero-conclusions h2 { color: #f7f4ee !important; font-size: 25px !important; }
+.hero-conclusions li { color: var(--dark-muted) !important; font-size: 16px !important; line-height: 1.65 !important; }
+.hero-conclusions li a { color: #f7f4ee !important; text-decoration-color: rgba(209,177,123,.48) !important; }
+
+.hero-panel { display: grid !important; grid-template-columns: minmax(250px,.72fr) minmax(520px,1.15fr) !important; gap: 28px 48px !important; max-width: 1320px; width: 100%; margin: 0 auto; padding: 50px clamp(24px,7vw,108px) 72px !important; border-top: 1px solid rgba(247,244,238,.14) !important; background: rgba(11,20,34,.3) !important; }
+.hero-panel:before { right: 7vw !important; border-color: rgba(209,177,123,.18) !important; box-shadow: none !important; }
+.audit-console-label, .period-toggle, .panel-source { grid-column: 1 / -1; }
+.audit-console-label { padding-bottom: 12px; border-bottom: 1px solid rgba(247,244,238,.12); }
+.audit-console-label span { color: var(--dark-muted) !important; }
+.audit-console-label b { color: var(--dark-gold) !important; }
+.period-toggle { max-width: 610px; padding: 4px !important; border-radius: 9px !important; background: rgba(247,244,238,.08) !important; }
+.period-toggle button { color: var(--dark-muted) !important; font-size: 15px !important; }
+.period-toggle button.active { border-radius: 6px !important; background: var(--accent) !important; color: #fff !important; }
+.hero-metric { margin: 0 !important; }
+.hero-metric > span { color: var(--dark-muted) !important; font-size: 14px !important; }
+.hero-metric strong, .hero-metric.pulse strong { color: #dceeea !important; font-size: clamp(68px,8vw,112px) !important; }
+.metric-quads { border: 0 !important; border-radius: 10px !important; background: rgba(247,244,238,.055) !important; overflow: hidden; }
+.metric-quads > div { min-height: 132px !important; padding: 22px !important; border-color: rgba(247,244,238,.1) !important; }
+.metric-quads span { color: var(--dark-muted) !important; font-size: 14px !important; }
+.metric-quads strong { color: #f7f4ee !important; font-family: "IBM Plex Mono", monospace !important; font-size: clamp(24px,2.5vw,36px) !important; }
+.panel-source { color: var(--dark-muted) !important; }
+.panel-source span { color: var(--dark-gold) !important; }
+
+/* Pages after the thesis use pale paper, typographic hierarchy and low-contrast separators. */
+.section { padding-block: clamp(72px,9vw,126px) !important; }
+.section-heading { margin-bottom: 36px !important; border-color: var(--line) !important; }
+.section-heading h2, .section-heading h3 { color: var(--ink) !important; font-family: "Noto Serif SC", "Source Han Serif SC", serif !important; font-size: clamp(31px,4vw,48px) !important; line-height: 1.13 !important; }
+.section-heading > div > p { color: var(--accent) !important; font-size: 13px !important; }
+.definition-strip { max-width: 1320px; margin: 0 auto; border: 0 !important; border-bottom: 1px solid var(--line) !important; background: transparent !important; }
+.definition-strip span { color: var(--accent) !important; }
+.definition-strip strong { color: var(--ink) !important; font-size: 19px !important; }
+.definition-strip p, .definition-strip a { color: var(--muted) !important; font-size: 16px !important; }
+
+/* The matrix reads as a directory: restrained parent sections, strong data alignment. */
+.matrix-section { background: transparent !important; }
+.filter-shell { border: 1px solid var(--line) !important; border-radius: 12px !important; background: rgba(255,255,255,.6) !important; box-shadow: none !important; }
+.category-tabs button, .filters label, .filters input, .reset { color: var(--text) !important; }
+.category-tabs button.active { background: var(--navy) !important; color: #fff !important; }
+.commodity-table { border-top-color: var(--line-strong) !important; }
+.matrix-group { border: 0 !important; border-bottom: 1px solid var(--line) !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; }
+.matrix-group-head { padding-block: 24px !important; background: transparent !important; }
+.matrix-group-head:hover { background: rgba(77,99,139,.055) !important; }
+.matrix-group-head h3, .commodity-name strong { color: var(--ink) !important; }
+.matrix-group-head span, .commodity-name p, .commodity-row small, .matrix-meta a { color: var(--muted) !important; }
+.matrix-group-head strong, .commodity-row .value-cell strong, .share-cell strong { color: var(--india) !important; font-family: "IBM Plex Mono", monospace !important; }
+.commodity-row { border-color: var(--line) !important; background: rgba(255,255,255,.38) !important; }
+.commodity-row:hover { background: rgba(77,99,139,.06) !important; }
+
+/* The route area is the signature feature: an evidence chain in a dark but readable field. */
+.route-section { background: linear-gradient(135deg, #172238, #1d2e46) !important; }
+.route-section:before { opacity: .2 !important; background-image: linear-gradient(rgba(247,244,238,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(247,244,238,.06) 1px, transparent 1px) !important; }
+.route-section .section-heading h2, .route-section h3, .route-section h4 { color: #f7f4ee !important; }
+.route-section .section-heading > div > p { color: var(--dark-gold) !important; }
+.route-controls { border: 1px solid rgba(247,244,238,.13) !important; border-radius: 12px !important; background: rgba(8,17,30,.22) !important; }
+.route-section .route-controls label span, .route-section .route-controls label b, .route-section .route-controls > div span { color: var(--dark-muted) !important; font-size: 14px !important; }
+.route-section .route-controls > div strong { color: #dceeea !important; }
+.route-card { border: 1px solid rgba(247,244,238,.13) !important; border-radius: 12px !important; background: rgba(7,16,29,.27) !important; box-shadow: none !important; }
+.route-title span, .route-leg-list span, .route-card > p, .route-analysis dd, .route-analysis li { color: var(--dark-muted) !important; font-size: 15px !important; }
+.route-leg-list strong, .route-card > p { color: #f7f4ee !important; }
+.route-title a, .route-leg-list em, .route-proof summary b { color: #b4d3cd !important; }
+.route-chain b.origin { border-color: rgba(142,78,80,.78) !important; color: #f1d4d0 !important; }
+.route-chain b.destination { border-color: rgba(104,139,190,.78) !important; color: #d7e4ff !important; }
+.route-chain b.transit { border-color: rgba(183,198,212,.48) !important; color: #e0e8ee !important; }
+.route-proof { border-top-color: rgba(247,244,238,.12) !important; }
+
+/* The detail drawer is a paper dossier: high contrast, without adding or removing modules. */
+.drawer-backdrop { background: rgba(16,25,39,.46) !important; }
+.detail-drawer { background: #fbfaf7 !important; color: var(--text) !important; box-shadow: -18px 0 38px rgba(16,25,39,.18) !important; }
+.detail-drawer h2, .detail-drawer h3, .detail-drawer h4 { color: var(--ink) !important; font-family: "Noto Serif SC", "Source Han Serif SC", serif !important; }
+.drawer-close { border-color: var(--line) !important; background: #fff !important; color: var(--ink) !important; }
+.drawer-english, .drawer-section-title span, .detail-drawer p, .detail-drawer li { color: var(--muted) !important; font-size: 16px !important; }
+.drawer-report-cover { border: 0 !important; border-left: 4px solid var(--accent) !important; border-radius: 8px !important; background: #f0eee8 !important; box-shadow: none !important; }
+.drawer-report-cover h3 { font-size: 26px !important; }
+.drawer-metrics { border: 1px solid var(--line) !important; border-radius: 10px !important; background: #fff !important; overflow: hidden; }
+.drawer-metrics > div { border-color: var(--line) !important; }
+.drawer-metrics span { color: var(--muted) !important; font-size: 13px !important; }
+.drawer-metrics strong { color: var(--india) !important; font-family: "IBM Plex Mono", monospace !important; font-size: 26px !important; }
+.detail-drawer :where(.monthly-module, .customs-hs8-module, .report-conclusion, .monitor-grid, .public-evidence, .trade-mode-panel, .trade-mode-trend-card) { border-color: var(--line) !important; background: rgba(255,255,255,.68) !important; }
+
+/* Enterprise pages stay distinct, but inherit the dossier's readability and muted hierarchy. */
+.enterprise-page { background: linear-gradient(180deg, #172238 0, #172238 300px, var(--bg) 300px) !important; }
+.enterprise-hero .section-heading h1 { color: #f7f4ee !important; }
+.enterprise-overview article, .enterprise-card summary, .enterprise-card-body, .enterprise-type-grid span, .enterprise-switcher a { border-color: var(--line) !important; box-shadow: none !important; background: rgba(255,255,255,.82) !important; }
+.enterprise-overview h2, .enterprise-card h3, .enterprise-conclusion h3 { color: var(--ink) !important; }
+.enterprise-overview p, .enterprise-card p, .enterprise-source-list p { color: var(--muted) !important; font-size: 16px !important; }
+.enterprise-flow span { background: rgba(77,99,139,.08) !important; color: var(--ink) !important; }
+
+@media (max-width: 980px) {
+  .hero-panel { grid-template-columns: 1fr !important; }
+  .hero-conclusions-grid { grid-template-columns: 1fr !important; }
+  .hero-conclusions article { min-height: auto; }
+}
+
+@media (max-width: 760px) {
+  .topbar { min-height: 64px; }
+  .hero-copy { padding-top: 88px !important; }
+  .hero h1 { font-size: clamp(46px,13vw,64px) !important; }
+  .hero-panel { padding-block: 38px 54px !important; }
+  .section-heading h2 { font-size: 32px !important; }
+  .hero-conclusions li, .drawer-english, .detail-drawer p, .detail-drawer li { font-size: 15px !important; }
+}
+
+/* Workspace shell: navigation, investigation canvas, and reading surface share one operating model. */
+.atlas-workspace {
+  min-height: 100vh;
+  background: #f2f0eb !important;
+}
+
+.workspace-rail {
+  display: none;
+}
+
+.workspace-canvas {
+  min-width: 0;
+}
+
+@media (min-width: 1080px) {
+  .atlas-workspace > .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 45;
+    padding-left: calc(248px + clamp(24px, 4vw, 68px)) !important;
+  }
+
+  .atlas-workspace > .topbar nav {
+    display: none;
+  }
+
+  .workspace-rail {
+    position: fixed;
+    z-index: 44;
+    top: 76px;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    width: 248px;
+    flex-direction: column;
+    gap: 3px;
+    padding: 32px 16px 24px;
+    border-right: 1px solid rgba(23,34,56,.09);
+    background: rgba(251,250,247,.96);
+    box-shadow: 8px 0 28px rgba(23,34,56,.035);
+    overflow-y: auto;
+  }
+
+  .workspace-rail > a {
+    display: grid;
+    grid-template-columns: 30px 1fr;
+    align-items: center;
+    min-height: 46px;
+    gap: 10px;
+    padding: 0 12px;
+    border-radius: 8px;
+    color: #526174;
+    text-decoration: none;
+    transition: background-color .15s ease, color .15s ease;
+  }
+
+  .workspace-rail > a span,
+  .workspace-rail-note span {
+    color: #896a42;
+    font: 700 11px/1 "IBM Plex Mono", "JetBrains Mono", monospace;
+    letter-spacing: .08em;
+  }
+
+  .workspace-rail > a strong {
+    font-size: 15px;
+    font-weight: 750;
+  }
+
+  .workspace-rail > a:hover,
+  .workspace-rail > a:focus-visible,
+  .workspace-rail > a.workspace-home {
+    background: rgba(77,99,139,.09);
+    color: #172238;
+  }
+
+  .workspace-rail > a.workspace-home {
+    margin-bottom: 15px;
+  }
+
+  .workspace-rail-note {
+    margin-top: auto;
+    padding: 18px 12px 0;
+    border-top: 1px solid rgba(23,34,56,.09);
+  }
+
+  .workspace-rail-note p {
+    margin: 10px 0 0;
+    color: #647182;
+    font-size: 12px;
+    line-height: 1.65;
+  }
+
+  .workspace-canvas {
+    margin-left: 248px;
+  }
+
+  .workspace-canvas .hero {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    align-items: stretch;
+    min-height: 0 !important;
+  }
+
+  .workspace-canvas .hero-copy {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 82px clamp(34px,7vw,120px) 56px !important;
+  }
+
+  .workspace-canvas .hero-panel {
+    display: grid !important;
+    grid-template-columns: minmax(330px,.72fr) minmax(520px,1.28fr) !important;
+    gap: 24px 48px;
+    align-items: start;
+    max-width: 1320px;
+    width: calc(100% - clamp(68px,10vw,168px));
+    margin: 0 auto 64px;
+    padding: 34px 38px !important;
+    border: 1px solid rgba(23,34,56,.11) !important;
+    border-radius: 14px;
+    background: rgba(255,255,255,.76) !important;
+  }
+
+  .workspace-canvas .hero-panel > * { width: 100%; }
+  .workspace-canvas .hero-panel .audit-console-label,
+  .workspace-canvas .hero-panel .period-toggle,
+  .workspace-canvas .hero-panel .panel-source { grid-column: 1 / -1; }
+  .workspace-canvas .hero-panel .hero-metric { grid-row: 2 / span 2; align-self: center; }
+  .workspace-canvas .hero-panel .metric-quads { max-width: none; grid-column: 2; }
+  .workspace-canvas .hero-panel:before { display: none; }
+
+  .workspace-canvas .section,
+  .workspace-canvas .definition-strip,
+  .workspace-canvas .pulse-ribbon,
+  .workspace-canvas footer {
+    padding-left: clamp(34px,5vw,84px) !important;
+    padding-right: clamp(34px,5vw,84px) !important;
+  }
+}
+
+/* Bright investigation canvas. Dark color is intentionally reserved for the map-like route evidence view. */
+.workspace-canvas .hero {
+  background:
+    radial-gradient(circle at 84% 16%, rgba(77,99,139,.10), transparent 18%),
+    linear-gradient(90deg, rgba(23,34,56,.055) 1px, transparent 1px),
+    linear-gradient(rgba(23,34,56,.045) 1px, transparent 1px),
+    #f8f7f3 !important;
+  background-size: auto, 80px 80px, 80px 80px, auto !important;
+}
+
+.workspace-canvas .hero h1,
+.workspace-canvas .hero h1 em { color: #172238 !important; }
+.workspace-canvas .hero h1 em { color: #896a42 !important; }
+.workspace-canvas .hero .eyebrow { color: #896a42 !important; }
+.workspace-canvas .hero .dek,
+.workspace-canvas .hero .text-btn { color: #526174 !important; }
+.workspace-canvas .hero-conclusions {
+  border-color: rgba(23,34,56,.11) !important;
+  background: rgba(255,255,255,.66) !important;
+}
+.workspace-canvas .hero-conclusions-summary strong,
+.workspace-canvas .hero-conclusions-summary b,
+.workspace-canvas .hero-conclusions h2,
+.workspace-canvas .hero-conclusions li a { color: #172238 !important; }
+.workspace-canvas .hero-conclusions-summary span,
+.workspace-canvas .hero-conclusions article > span { color: #896a42 !important; }
+.workspace-canvas .hero-conclusions li { color: #526174 !important; }
+.workspace-canvas .hero-conclusions article { border-color: rgba(23,34,56,.10) !important; }
+
+.workspace-canvas .hero-panel {
+  border-color: rgba(23,34,56,.11) !important;
+  background: rgba(255,255,255,.76) !important;
+}
+.workspace-canvas .audit-console-label { border-bottom-color: rgba(23,34,56,.10) !important; }
+.workspace-canvas .audit-console-label span,
+.workspace-canvas .hero-metric > span,
+.workspace-canvas .metric-quads span,
+.workspace-canvas .panel-source { color: #5b6a7a !important; }
+.workspace-canvas .audit-console-label b,
+.workspace-canvas .panel-source span { color: #896a42 !important; }
+.workspace-canvas .period-toggle { background: #eef0f2 !important; }
+.workspace-canvas .period-toggle button { color: #536375 !important; }
+.workspace-canvas .hero-metric strong,
+.workspace-canvas .hero-metric.pulse strong { color: #294c62 !important; }
+.workspace-canvas .metric-quads { background: #f1f2ef !important; }
+.workspace-canvas .metric-quads > div { border-color: rgba(23,34,56,.09) !important; }
+.workspace-canvas .metric-quads strong { color: #172238 !important; }
+
+@media (max-width: 1079px) {
+  .workspace-rail {
+    display: flex;
+    gap: 6px;
+    padding: 10px 16px;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--line);
+    background: rgba(251,250,247,.96);
+  }
+
+  .workspace-rail > a {
+    flex: 0 0 auto;
+    padding: 9px 11px;
+    border-radius: 7px;
+    color: #405065;
+    font-size: 13px;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .workspace-rail > a span,
+  .workspace-rail-note { display: none; }
+  .workspace-rail > a.workspace-home { background: rgba(77,99,139,.08); color: #172238; }
+}
+
 
