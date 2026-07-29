@@ -1256,10 +1256,12 @@ function Home() {
     const q = search.trim().toLowerCase();
     return (category === "全部" || item.category === category) && (!q || `${item.name} ${item.english} ${item.hs} ${hs8Of(item)} ${item.searchTerms??""}`.toLowerCase().includes(q)) && item.completeYear.share >= minShare && item.completeYear.china >= minValue;
   }).sort((a,b)=>b.completeYear.share-a.completeYear.share),[category,search,minShare,minValue]);
-  const visibleGroups = useMemo(() => matrixGroups.map(group => ({
-    ...group,
-    items: groupChildren(group).filter(item => filtered.some(match=>match.id===item.id)).sort((a,b)=>b.completeYear.share-a.completeYear.share),
-  })).filter(group=>group.items.length>0),[filtered]);
+  const visibleGroups = useMemo(() => matrixGroups.map(group => {
+    const items = groupChildren(group)
+      .filter(item => filtered.some(match=>match.id===item.id))
+      .sort((a,b)=>b.completeYear.share-a.completeYear.share);
+    return { ...group, items, matrixShare: groupStats(items).share };
+  }).filter(group=>group.items.length>0).sort((a,b)=>b.matrixShare-a.matrixShare),[filtered]);
   const toggleGroup = (id:string) => setExpandedGroups(current => {
     const next = new Set(current);
     if (next.has(id)) next.delete(id);

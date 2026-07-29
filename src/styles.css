@@ -3970,4 +3970,13 @@ main { background: linear-gradient(180deg, #f7f6f2 0%, var(--bg) 42%, #eeece6 10
   .workspace-rail > a.workspace-home { background: rgba(77,99,139,.08); color: #172238; }
 }
 
+/* 首页结论按阅读顺序纵向排列，避免三类结论在同一行内被压缩。 */
+.hero-conclusions-grid {
+  grid-template-columns: 1fr !important;
+}
+
+.hero-conclusions article + article {
+  border-top: 1px solid rgba(23,34,56,.10);
+}
+
 
