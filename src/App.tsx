@@ -1245,6 +1245,7 @@ function Home() {
   const [routeValue,setRouteValue] = useState(.2);
   const [routeGrowth,setRouteGrowth] = useState(20);
   const [period,setPeriod] = useState<"annual"|"pulse">("annual");
+  const [railCollapsed,setRailCollapsed] = useState(false);
 
   useEffect(() => {
     const onKey = (event:KeyboardEvent) => { if (event.key === "Escape") setSelected(null); };
@@ -1328,13 +1329,23 @@ function Home() {
   const selectedEnterpriseProduct = selectedEnterpriseSlug ? enterpriseProductsBySlug[selectedEnterpriseSlug] : undefined;
 
   return <main className="atlas-workspace">
-    <header className="topbar">
+    <header className={`topbar ${railCollapsed ? "rail-collapsed" : ""}`}>
       <a className="brand" href="#top" aria-label="返回首页"><span className="brand-mark">依</span><span>中印供应链依赖图谱<small>INDIA × CHINA SUPPLY ATLAS</small></span></a>
       <nav aria-label="主要导航"><a href="#matrix">依赖矩阵</a><a href="#routes">第三国路径</a><a href="#sources">来源中心</a><a href="#reports">报告下载</a></nav>
       <span className="snapshot"><i/> PUBLIC · 快照 {SNAPSHOT_DATE}</span>
     </header>
 
-    <aside className="workspace-rail" aria-label="研究工作台导航">
+    <aside className={`workspace-rail ${railCollapsed ? "is-collapsed" : ""}`} aria-label="研究工作台导航">
+      <button
+        className="workspace-rail-toggle"
+        type="button"
+        onClick={() => setRailCollapsed(value => !value)}
+        aria-expanded={!railCollapsed}
+        aria-label={railCollapsed ? "展开左侧导航" : "收起左侧导航"}
+      >
+        <span>{railCollapsed ? "展开导航" : "收起导航"}</span>
+        <b aria-hidden="true">{railCollapsed ? "›" : "‹"}</b>
+      </button>
       <a className="workspace-home" href="#top"><span>01</span><strong>总览</strong></a>
       <a href="#matrix"><span>02</span><strong>商品依赖</strong></a>
       <a href="#routes"><span>03</span><strong>路径核验</strong></a>
@@ -1344,7 +1355,7 @@ function Home() {
       <div className="workspace-rail-note"><span>RESEARCH MODE</span><p>商品、路径与企业线索均可交叉查看。</p></div>
     </aside>
 
-    <div className="workspace-canvas">
+    <div className={`workspace-canvas ${railCollapsed ? "rail-collapsed" : ""}`}>
 
     <section className="hero" id="top">
       <div className="hero-grid" aria-hidden="true"/>

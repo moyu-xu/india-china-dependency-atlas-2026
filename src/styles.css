@@ -3850,6 +3850,78 @@ main { background: linear-gradient(180deg, #f7f6f2 0%, var(--bg) 42%, #eeece6 10
     margin-left: 248px;
   }
 
+  .workspace-rail,
+  .workspace-canvas,
+  .atlas-workspace > .topbar {
+    transition: width .2s ease, margin-left .2s ease, padding-left .2s ease;
+  }
+
+  .workspace-rail-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 38px;
+    margin: 0 0 12px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 8px;
+    background: rgba(77,99,139,.07);
+    color: #526174;
+    cursor: pointer;
+    font: 700 12px/1 "IBM Plex Mono", "JetBrains Mono", monospace;
+    letter-spacing: .04em;
+  }
+
+  .workspace-rail-toggle:hover,
+  .workspace-rail-toggle:focus-visible {
+    background: rgba(77,99,139,.13);
+    color: #172238;
+    outline: none;
+  }
+
+  .workspace-rail-toggle b {
+    color: #896a42;
+    font: 700 22px/1 Arial, sans-serif;
+  }
+
+  .workspace-rail.is-collapsed {
+    width: 72px;
+    padding-right: 10px;
+    padding-left: 10px;
+    overflow-x: hidden;
+  }
+
+  .workspace-rail.is-collapsed > a {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 0;
+    padding: 0;
+  }
+
+  .workspace-rail.is-collapsed > a strong,
+  .workspace-rail.is-collapsed .workspace-rail-note,
+  .workspace-rail.is-collapsed .workspace-rail-toggle span {
+    display: none;
+  }
+
+  .workspace-rail.is-collapsed > a.workspace-home {
+    margin-bottom: 12px;
+  }
+
+  .workspace-rail.is-collapsed .workspace-rail-toggle {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .workspace-canvas.rail-collapsed {
+    margin-left: 72px;
+  }
+
+  .atlas-workspace > .topbar.rail-collapsed {
+    padding-left: calc(72px + clamp(24px, 4vw, 68px)) !important;
+  }
+
   .workspace-canvas .hero {
     display: grid !important;
     grid-template-columns: 1fr !important;
@@ -3946,6 +4018,7 @@ main { background: linear-gradient(180deg, #f7f6f2 0%, var(--bg) 42%, #eeece6 10
 .workspace-canvas .metric-quads strong { color: #172238 !important; }
 
 @media (max-width: 1079px) {
+  .workspace-rail-toggle { display: none; }
   .workspace-rail {
     display: flex;
     gap: 6px;
