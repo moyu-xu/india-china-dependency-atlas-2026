@@ -1260,6 +1260,15 @@ function Home() {
   const [period,setPeriod] = useState<"annual"|"pulse">("annual");
   const [railCollapsed,setRailCollapsed] = useState(false);
 
+  const availableCategories = useMemo<Category[]>(
+    () => categories.filter(category => category === "全部" || matrixCommodities.some(item => item.category === category)),
+    [],
+  );
+
+  useEffect(() => {
+    if (!availableCategories.includes(category)) setCategory("全部");
+  }, [availableCategories, category]);
+
   useEffect(() => {
     const onKey = (event:KeyboardEvent) => { if (event.key === "Escape") setSelected(null); };
     window.addEventListener("keydown",onKey);
@@ -1444,7 +1453,7 @@ function Home() {
     <section className="section matrix-section" id="matrix">
       <div className="section-heading"><div><p>DEPENDENCY MATRIX / 2025</p><h2>重点商品清单</h2></div></div>
       <div className="filter-shell">
-        <div className="category-tabs" role="tablist" aria-label="行业筛选">{categories.map(item=><button key={item} role="tab" aria-selected={category===item} className={category===item?"active":""} onClick={()=>setCategory(item)}>{item}</button>)}</div>
+        <div className="category-tabs" role="tablist" aria-label="行业筛选">{availableCategories.map(item=><button key={item} role="tab" aria-selected={category===item} className={category===item?"active":""} onClick={()=>setCategory(item)}>{item}</button>)}</div>
         <div className="filters"><label className="search"><span>搜索商品 / 英文 / HS</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="例如：盾构、起重机、870510"/></label><label><span>最低对华占比 <b>{minShare}%</b></span><input type="range" min="0" max="90" step="5" value={minShare} onChange={e=>setMinShare(Number(e.target.value))}/></label><label><span>最低自华进口额 <b>{minValue===0?"不限":formatB(minValue)}</b></span><input type="range" min="0" max="5" step="0.25" value={minValue} onChange={e=>setMinValue(Number(e.target.value))}/></label><button className="reset" onClick={reset}>重置筛选</button></div>
       </div>
       <div className="matrix-meta source-only" aria-live="polite"><a href={COMTRADE} target="_blank" rel="noreferrer">UN Comtrade · 2025 · HS2022（H6）· 访问 {SNAPSHOT_DATE} ↗</a></div>
