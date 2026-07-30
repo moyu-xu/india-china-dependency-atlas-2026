@@ -459,6 +459,7 @@ export const typicalEnterprises: TypicalEnterpriseProduct[] = [
     enterprises: [
       {
         companyName: "JCB India",
+        militaryStatus: "军工企业",
         chineseName: "JCB 印度",
         englishName: "JCB India Limited",
         industry: "工程机械、建筑机械、土方机械",

@@ -411,7 +411,20 @@ const sensitiveUseById: Record<string, SensitiveUseEntry[]> = {
   ],
 };
 
-const militaryConclusionSignals = Object.values(sensitiveUseById).flat().filter(item=>item.conclusion);
+const commodityIdByEnterpriseProductId: Record<string,string> = {
+  battery: "battery",
+  semiconductor: "semiconductor",
+  rareearth: "rareearth",
+  "construction-machinery": "earthmoving_dumptruck",
+  "tunnel-boring-machine": "tunnel_843031",
+};
+
+const militaryCaseProducts = typicalEnterprises
+  .map(product => ({
+    product,
+    enterprises: product.enterprises.filter(enterprise => enterprise.militaryStatus),
+  }))
+  .filter(({ enterprises }) => enterprises.length > 0);
 
 const commodities: CommodityRecord[] = [
   { id: "battery", hs: "850760", name: "锂离子蓄电池", english: "Lithium-ion accumulators", category: "电子与电力", completeYear: annual(3.807624325, 4.083603910), latestPulse: pulse, alternatives: ["日本", "印度尼西亚", "韩国", "越南", "德国"], definition: "HS 850760：锂离子蓄电池，不包含铅酸蓄电池及其他化学体系。", sourcePublished: "2026-07", accessedAt: SNAPSHOT_DATE },
@@ -1386,7 +1399,14 @@ function Home() {
             <span>02</span>
             <h2>明确涉军物项</h2>
             <ul>
-              {militaryConclusionSignals.map((item,index)=><li key={`military-signal-${index}`}><a href={item.item.includes("稀土") ? "#commodity-rareearth" : item.item.includes("泵") ? "#commodity-pumps" : item.item.includes("机床") ? "#commodity-toolparts" : "#commodity-earthmoving_dumptruck"} onClick={event=>focusMatrixCommodity(item.item.includes("稀土") ? "rareearth" : item.item.includes("泵") ? "pumps" : item.item.includes("机床") ? "toolparts" : "earthmoving_dumptruck",event)}>{item.item}：{item.label}</a></li>)}
+              {militaryCaseProducts.map(({ product, enterprises }) => {
+                const commodityId = commodityIdByEnterpriseProductId[product.productId];
+                return <li key={`military-case-${product.productId}`}>
+                  <a href={`#commodity-${commodityId}`} onClick={event=>focusMatrixCommodity(commodityId,event)}>
+                    {product.productName}：{enterprises.map(enterprise=>enterprise.chineseName).join("、")}
+                  </a>
+                </li>;
+              })}
             </ul>
           </article>
           <article>
