@@ -3732,7 +3732,10 @@ main { background: linear-gradient(180deg, #f7f6f2 0%, var(--bg) 42%, #eeece6 10
 .detail-drawer :where(.monthly-module, .customs-hs8-module, .report-conclusion, .monitor-grid, .public-evidence, .trade-mode-panel, .trade-mode-trend-card) { border-color: var(--line) !important; background: rgba(255,255,255,.68) !important; }
 
 /* Enterprise pages stay distinct, but inherit the dossier's readability and muted hierarchy. */
-.enterprise-page { background: linear-gradient(180deg, #172238 0, #172238 300px, var(--bg) 300px) !important; }
+.enterprise-page { background: linear-gradient(180deg, #172238 0, #172238 500px, var(--bg) 500px) !important; }
+.enterprise-hero { padding-bottom: 44px; }
+.enterprise-hero .section-heading { align-items: flex-start; }
+.enterprise-hero .section-heading h1 { line-height: 1.05; }
 .enterprise-hero .section-heading h1 { color: #f7f4ee !important; }
 .enterprise-overview article, .enterprise-card summary, .enterprise-card-body, .enterprise-type-grid span, .enterprise-switcher a { border-color: var(--line) !important; box-shadow: none !important; background: rgba(255,255,255,.82) !important; }
 .enterprise-overview h2, .enterprise-card h3, .enterprise-conclusion h3 { color: var(--ink) !important; }
