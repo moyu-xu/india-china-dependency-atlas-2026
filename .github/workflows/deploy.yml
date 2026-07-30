@@ -13,7 +13,8 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  # PR 校验不应取消 main 的正式 Pages 发布。
+  group: pages-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
