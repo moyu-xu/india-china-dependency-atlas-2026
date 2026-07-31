@@ -415,6 +415,7 @@ const commodityIdByEnterpriseProductId: Record<string,string> = {
   battery: "battery",
   semiconductor: "semiconductor",
   rareearth: "rareearth",
+  "industrial-machinery-parts": "toolparts",
   "construction-machinery": "earthmoving_dumptruck",
   "tunnel-boring-machine": "tunnel_843031",
 };
