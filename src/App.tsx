@@ -1375,6 +1375,7 @@ function Home() {
       <a href="#policy"><span>04</span><strong>政策管制</strong></a>
       <a href="#sources"><span>05</span><strong>数据来源</strong></a>
       <a href="#reports"><span>06</span><strong>报告归档</strong></a>
+      <a href="#enterprises"><span>07</span><strong>企业案例</strong></a>
       <div className="workspace-rail-note"><span>RESEARCH MODE</span><p>商品、路径与企业线索均可交叉查看。</p></div>
     </aside>
 
@@ -1472,6 +1473,15 @@ function Home() {
           </div>}
         </section>})}
         {filtered.length===0&&<div className="empty-state"><strong>没有符合条件的商品</strong><p>降低阈值或清除搜索词后再试。</p><button onClick={reset}>恢复全部</button></div>}
+      </div>
+    </section>
+
+    <section className="section enterprise-directory" id="enterprises">
+      <div className="section-heading"><div><p>ENTERPRISE CASES</p><h2>企业案例</h2></div></div>
+      <div className="enterprise-directory-grid">
+        {typicalEnterprises.map(item=><a className="enterprise-directory-card" key={item.slug} href={enterpriseHref(item.slug)}>
+          <span>典型流向企业</span><strong>{item.productName}</strong><p>查看对应商品的涉军企业案例、供应链角色与公开来源。</p><b>进入案例页 ↗</b>
+        </a>)}
       </div>
     </section>
 
