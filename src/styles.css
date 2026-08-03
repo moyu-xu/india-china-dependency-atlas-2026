@@ -298,6 +298,13 @@ input[type="range"] { width: 100%; accent-color: var(--gold); cursor: pointer; }
 .edge i { display: block; position: relative; height: 1px; margin-top: 8px; background: #666b67; }
 .edge i:after { content: ""; position: absolute; right: 0; top: -3px; border-left: 6px solid #666b67; border-top: 3px solid transparent; border-bottom: 3px solid transparent; }
 .route-card > p { margin: 0; padding: 12px 14px; border: 1px solid rgba(231,223,207,.1); color: var(--muted); background: rgba(255,255,255,.018); font-size: 12px; }
+.route-trade-details { margin-top: 14px; padding: 13px 14px; border: 1px solid rgba(231,223,207,.12); background: rgba(255,255,255,.014); }
+.route-trade-details summary { display: flex; justify-content: space-between; gap: 16px; align-items: center; cursor: pointer; list-style: none; }
+.route-trade-details summary::-webkit-details-marker { display: none; }
+.route-trade-details summary b { color: var(--teal-bright); font-size: 12px; white-space: nowrap; }
+.route-trade-details[open] summary { margin-bottom: 12px; }
+.route-trade-details h4 { margin: 0; color: var(--text); font: 600 15px "Noto Serif SC", serif; }
+.route-trade-details .route-leg-list { margin-bottom: 12px; }
 .route-analysis { display: grid; gap: 12px; margin: 16px 0 0; }
 .route-analysis div { display: grid; grid-template-columns: 72px 1fr; gap: 12px; }
 .route-analysis dt { color: var(--gold-bright); font-size: 12px; font-weight: 700; }
