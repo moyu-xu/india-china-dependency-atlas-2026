@@ -2,8 +2,44 @@ export type EnterpriseSource = {
   institution: string;
   title: string;
   published?: string;
-  type: "用户报告" | "企业官网" | "政府/监管" | "媒体报道" | "公司披露";
+  type: "用户报告" | "企业官网" | "政府/监管" | "媒体报道" | "公司披露" | "贸易数据库";
   url?: string;
+};
+
+export type EnterpriseRiskChainStep = {
+  label: string;
+  title: string;
+  detail: string;
+  status: "confirmed" | "signal" | "verify";
+};
+
+export type EnterpriseRiskChainBranch = {
+  label: string;
+  title: string;
+  summary: string;
+  steps: EnterpriseRiskChainStep[];
+  boundary: string;
+  sourceLabel: string;
+};
+
+export type EnterpriseMechanismNode = {
+  title: string;
+  detail: string;
+  status?: "confirmed" | "signal" | "verify" | "cleared";
+};
+
+export type EnterpriseMechanism = {
+  suppliers: EnterpriseMechanismNode[];
+  hub: EnterpriseMechanismNode;
+  downstream: EnterpriseMechanismNode;
+  endpoints: EnterpriseMechanismNode[];
+};
+
+export type EnterpriseRiskChain = {
+  title: string;
+  summary: string;
+  mechanism?: EnterpriseMechanism;
+  branches: EnterpriseRiskChainBranch[];
 };
 
 export type TypicalEnterprise = {
@@ -20,6 +56,7 @@ export type TypicalEnterprise = {
   evidenceNote: string;
   evidenceLevel: "高" | "中" | "低";
   militaryStatus?: "军工企业" | "涉军企业";
+  riskChain?: EnterpriseRiskChain;
   sources: EnterpriseSource[];
 };
 
@@ -598,9 +635,107 @@ export const typicalEnterprises: TypicalEnterpriseProduct[] = [
         caseStudy: "苏尔寿在印度提供泵类设备及生命周期服务；本页将其作为工业机械零部件涉军场景的企业核验节点，具体中国来源商品和采购批次仍需结合企业级贸易记录确认。",
         evidenceNote: "企业公开资料可确认其在印度的泵业与设备服务业务；具体商品是否从中国进口、以及是否进入涉军项目，仍需通过进口商记录、采购合同和项目单证核验。",
         evidenceLevel: "中",
+        riskChain: {
+          title: "Sulzer Pumps India Private Limited → CSBC Corporation, Taiwan：已确认石化项目用途",
+          summary: "材料中的印度主体可对应到 Sulzer Pumps India Private Limited（苏尔寿泵业印度私人有限公司）；公开贸易记录还出现苏州苏尔寿泵业与卧龙电气南阳防爆集团。现有材料将泵组流向指向台湾中油大林石化油品储运中心，未证明其流入军用平台。",
+          mechanism: {
+            suppliers: [
+              { title: "苏州苏尔寿泵业有限公司", detail: "泵体、泵轴与备件", status: "signal" },
+              { title: "卧龙电气南阳防爆集团", detail: "防爆电机与电机部件", status: "signal" },
+            ],
+            hub: { title: "苏尔寿泵业印度私人有限公司", detail: "采购、集成泵组", status: "signal" },
+            downstream: { title: "台湾国际造船股份有限公司（台船）", detail: "接收泵组", status: "signal" },
+            endpoints: [
+              { title: "大林石化油品储运中心", detail: "已确认石化储运项目；军用流向查否", status: "cleared" },
+            ],
+          },
+          branches: [
+            {
+              label: "KNOWN END USE / 已知最终用途",
+              title: "苏尔寿泵组 → 台船采购 → 台湾中油大林石化油品储运中心",
+              summary: "按补充材料，台船采购的苏尔寿泵组最终用途指向台湾中油在高雄建设的“高雄港洲际货柜二期大林石化油品储运中心投资计划”；该用途属于石化品储存、管输、码头装船和槽车装卸基础设施。",
+              steps: [
+                {
+                  label: "01 / 上游采购",
+                  title: "Sulzer Pumps India Private Limited 采购中国泵件和电机",
+                  detail: "2025 年 4—6 月，贸易记录显示其与 Sulzer Pumps Suzhou Ltd.（苏州苏尔寿泵业有限公司）之间有泵及备件记录；2025 年电机记录对应 Wolong Electric Nanyang Explosion Protection Group Co., Ltd.（卧龙电气南阳防爆集团股份有限公司）。具体 9/7 条记录的批次口径仍以完整提单核验。",
+                  status: "signal",
+                },
+                {
+                  label: "02 / 印度节点",
+                  title: "Sulzer Pumps India Private Limited 在印度集成泵组",
+                  detail: "产品属性与时间线支持进口泵体、泵轴、电机和备件在印度集成的可能性；是否发生实质加工、由哪一生产或服务主体承接，尚缺装配记录。",
+                  status: "signal",
+                },
+                {
+                  label: "03 / 台船采购",
+                  title: "CSBC Corporation, Taiwan 采购苏尔寿泵组",
+                  detail: "材料称 2025 年 CSBC Corporation, Taiwan（台湾国际造船股份有限公司，台船）从 Sulzer Pumps India Private Limited 接收至少 6 批、11 台/套离心泵组；交易双方实名对应与采购单证仍待核验。",
+                  status: "signal",
+                },
+                {
+                  label: "04 / 计划归属",
+                  title: "台湾中油高雄大林石化油品储运中心投资计划",
+                  detail: "最终用途指向台湾中油在高雄建设的“高雄港洲际货柜二期大林石化油品储运中心投资计划”，对应石化品储存、管输、码头装船和槽车装卸基础设施。",
+                  status: "confirmed",
+                },
+                {
+                  label: "05 / EPC 项目",
+                  title: "KDC1045001 与 KDX0832002 两个统包工程",
+                  detail: "包括“大林石化油品储运中心三区26座石化品储槽统包工程”（项目编号 KDC1045001）和“大林石化油品储运中心槽车装卸工场统包工程”（项目编号 KDX0832002）；不属于油田钻井、原油举升或海上石油开采项目。",
+                  status: "confirmed",
+                },
+              ],
+              boundary: "证据边界：该分支按补充材料作为当前最终用途主链展示；两个 EPC 项目与具体泵组之间的采购合同、设备位号、装船单和现场验收资料仍需补充核验。",
+              sourceLabel: "依据：用户提供 PDF 及补充说明；项目编号与最终用途按用户材料录入",
+            },
+            {
+              label: "SUSPECTED MILITARY END USE / 疑似军用终端",
+              title: "苏尔寿泵组 → 台船 → “奋进魔鬼鱼（Endeavor Manta）”",
+              summary: "无人艇链条保留为疑似关联，用于提示台船涉军装备能力与泵组流向之间的潜在风险；目前没有证据证明这批泵组已经装入该无人艇。",
+              steps: [
+                {
+                  label: "01 / 上游采购",
+                  title: "Sulzer Pumps India Private Limited 采购中国泵件和电机",
+                  detail: "交易记录涉及 Sulzer Pumps Suzhou Ltd.（苏州苏尔寿泵业有限公司）的泵及备件，以及 Wolong Electric Nanyang Explosion Protection Group Co., Ltd.（卧龙电气南阳防爆集团股份有限公司）的电机；具体批次仍需完整提单核验。",
+                  status: "signal",
+                },
+                {
+                  label: "02 / 印度集成",
+                  title: "Sulzer Pumps India Private Limited 集成泵组",
+                  detail: "泵体、泵轴、电机和备件可能在印度形成泵组，但缺少装配、改造和最终客户用途记录。",
+                  status: "signal",
+                },
+                {
+                  label: "03 / 台船接收",
+                  title: "CSBC Corporation, Taiwan 接收泵组",
+                  detail: "材料称台船从 Sulzer Pumps India Private Limited 接收至少 6 批、11 台/套离心泵组；这只能证明采购关系线索，不能直接推出无人艇装配关系。",
+                  status: "signal",
+                },
+                {
+                  label: "04 / 疑似终端",
+                  title: "台船“奋进魔鬼鱼（Endeavor Manta）”军用级无人艇",
+                  detail: "CSBC 官方资料确认该军用级无人船具备模块化酬载，可搭载轻型鱼雷或高爆炸药；泵组是否进入该艇，当前仅为疑似关联。",
+                  status: "verify",
+                },
+                {
+                  label: "05 / 背景放大",
+                  title: "台船海鯤号与 Lockheed Martin 系统",
+                  detail: "公开资料显示 CSBC 建造海鯤号，战斗管理系统由 Lockheed Martin（洛克希德·马丁公司）负责，武器体系涉及 MK-48 系列鱼雷；这是台船军用能力背景，不是泵件进入无人艇的闭环证据。",
+                  status: "verify",
+                },
+              ],
+              boundary: "证据边界：该分支只能作为疑似军用终端风险提示；尚不能确认 Sulzer Pumps India Private Limited 或 CSBC Corporation, Taiwan 将上述泵组用于 Endeavor Manta、海鯤号或其他军用平台，亦不能据此认定存在规避出口管制行为。",
+              sourceLabel: "依据：用户提供 PDF；ImportGenius；Sulzer Ltd.、CSBC Corporation, Taiwan、Lockheed Martin 公开资料",
+            },
+          ],
+        },
         sources: [
           reportSource,
           { institution: "Sulzer", title: "Sulzer India", type: "企业官网", url: "https://www.sulzer.com/en/india" },
+          { institution: "ImportGenius", title: "Sulzer Pumps India Private Limited import records", published: "2025", type: "贸易数据库", url: "https://www.importgenius.cn/india/importers/sulzer-pumps-india-private-limited" },
+          { institution: "CSBC Corporation, Taiwan", title: "台船官方资料：奋进魔鬼鱼（Endeavor Manta）", published: "2025", type: "企业官网", url: "https://www.csbcnet.com.tw/" },
+          { institution: "Lockheed Martin", title: "MK 48 heavyweight torpedo", published: "2025", type: "企业官网", url: "https://www.lockheedmartin.com/en-us/news/features/2025/5-fast-facts-about-the-mk-48-heavyweight-torpedo.html" },
         ],
       },
     ],

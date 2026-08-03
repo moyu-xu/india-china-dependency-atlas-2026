@@ -1,7 +1,7 @@
 import { memo, useEffect, useMemo, useState } from "react";
 import { MONTHLY_SOURCE_ACCESSED, MONTHLY_SOURCE_LABEL, MONTHLY_SOURCE_URL, monthlyTradeById, type MonthlyTradePoint } from "./data/monthlyTrade";
 import chinaCustomsHs8 from "./data/chinaCustomsHs8.json";
-import { enterpriseProductAliasByCommodityId, enterpriseProductsBySlug, typicalEnterprises, type TypicalEnterpriseProduct } from "./data/typicalEnterprises";
+import { enterpriseProductAliasByCommodityId, enterpriseProductsBySlug, typicalEnterprises, type EnterpriseMechanism, type EnterpriseRiskChainStep, type TypicalEnterprise, type TypicalEnterpriseProduct } from "./data/typicalEnterprises";
 
 type Category = "全部" | "原材料" | "医药化工" | "电子与电力" | "工业机械" | "工程设备" | "车辆零部件";
 type TrendPoint = { year: string; china: number; world: number; share: number };
@@ -890,10 +890,44 @@ const sources = [
 const visibleSources = sources.filter(source=>source.tag!=="FERT" && source.title!=="DGCI&S 化肥直接/间接装运专题");
 
 const policies = [
-  { date:"2024.12", title:"统一两用物项出口管制框架生效", body:"条例覆盖出口、过境、转运、通运、再出口以及特定境外再转移情形。", url:CONTROL_RULE },
-  { date:"2025.02", title:"钨、碲、铋、钼、铟相关物项", body:"部分战略矿产、化合物及相关技术纳入许可管理；应按参数而非仅按 HS 识别。", url:"https://www.mofcom.gov.cn/zfxxgk/gkml/art/2025/art_084ded0609404b2d81c746b31c9a03a6.html" },
-  { date:"2025.04", title:"部分中重稀土相关物项", body:"钐、钆、铽、镝、镥、钪、钇等相关物项按公告参数实施出口管制。", url:"https://www.mofcom.gov.cn/zwgk/zcfb/art/2025/art_9c2108ccaf754f22a34abab2fedaa944.html" },
-  { date:"2026.01", title:"年度许可证管理目录更新", body:"按 2026 年进出口税则调整年度许可目录；历史编码通过显式对照处理。", url:CONTROL_CATALOG },
+  { date:"2020.10", title:"《出口管制法》通过", body:"建立两用物项、军品、核以及其他受管制物项的统一法律框架，覆盖境内出口、境外转移和相关服务。", url:"https://www.npc.gov.cn/c2/c30834/202010/t20201017_308277.html" },
+  { date:"2020.11", title:"商用密码进口许可与出口管制", body:"商用密码进口许可清单和出口管制清单发布，相关经营者需按清单和许可证要求申报。", url:"https://aqygzj.mofcom.gov.cn/qdml/art/2020/art_aa383a8551a64251a7d202e0c62d4ee4.html" },
+  { date:"2020.12", title:"《出口管制法》施行", body:"出口经营者、最终用户和最终用途审查成为法定合规要求，违法责任与域外适用边界同步明确。", url:"https://www.npc.gov.cn/c2/c30834/202010/t20201017_308277.html" },
+  { date:"2021.01", title:"2021 年两用物项和技术进出口许可证目录", body:"年度目录细化两用物项和技术的许可编码、商品描述及管理要求。", url:"https://12335.mofcom.gov.cn/articledwmy/zcxx/dwmy/202101/1927463_1.html" },
+  { date:"2021.04", title:"出口经营者内部合规机制指引", body:"要求建立受管制清单筛查、最终用户和最终用途审查、交易风险评估及记录留存机制。", url:"https://www.mofcom.gov.cn/zcfb/dwmygl/art/2021/art_3c243ab2b57b4089972bf74ea8d929dc.html" },
+  { date:"2021.06", title:"两用物项许可证无纸化办理", body:"推进两用物项和敏感物项许可证电子化、无纸化办理，强化线上核验和留痕。", url:"https://www.mofcom.gov.cn/zfxxgk/gkml/art/2021/art_53736606dffb43a0816a4eb003f14606.html" },
+  { date:"2022.01", title:"2022 年两用物项和技术进出口许可证目录", body:"年度目录更新许可编码和商品范围，出口判断仍以目录、参数和最终用途为准。", url:"https://exportcontrol.mofcom.gov.cn/article/hgfw/lywxcx/gzqd/202111/225.html" },
+  { date:"2023.01", title:"2023 年两用物项和技术进出口许可证目录", body:"年度目录继续实行许可证管理，配套要求覆盖海关申报和出口经营者合规审查。", url:"https://m.mofcom.gov.cn/article/zcfb/zcwg/202305/20230503410054.shtml" },
+  { date:"2023.07", title:"镓、锗相关物项出口管制", body:"镓、锗相关物项纳入出口许可管理，需按公告所列物项和技术参数申请许可。", url:"https://www.mofcom.gov.cn/zcfb/blgg/art/2023/art_ca2e9d349361441f847bdabac5d8331b.html" },
+  { date:"2023.07", title:"无人机及相关设备出口管制（一）", body:"对特定无人机发动机、敏感载荷、无线电通信设备和反无人机系统实施出口管制。", url:"https://interview.mofcom.gov.cn/mofcom_interview/front/opdata/downlodePdf?id=20230703424598" },
+  { date:"2023.08", title:"无人机及相关设备出口管制（二）", body:"对部分消费级无人机实施临时管制，并明确不得用于军事、核生化及恐怖主义活动。", url:"https://interview.mofcom.gov.cn/mofcom_interview/front/opdata/downlodePdf?id=20230703424616" },
+  { date:"2023.10", title:"石墨相关物项出口管制调整", body:"将三项高敏感石墨物项纳入许可管理，并取消五项较低敏感度石墨物项的临时管制。", url:"https://www.mofcom.gov.cn/xwfb/art/2023/art_8114f91bafb3454b970857b825e8e44a.html" },
+  { date:"2024.01", title:"2024 年两用物项和技术进出口许可证目录", body:"年度目录更新两用物项许可编码和商品范围，作为年度申报和许可证审核依据。", url:"https://www.mofcom.gov.cn/zcfb/blgg/art/2023/art_9853e2727add4ae7b7089afaff983106.html" },
+  { date:"2024.05", title:"航空航天相关设备、软件和技术出口管制", body:"对部分航空航天结构件、发动机制造设备、软件和技术实施许可管理，涉及钛铝合金超塑成形及扩散连接设备。", url:"https://www.mofcom.gov.cn/zfxxgk/gkml/art/2024/art_47f7a3b6d75b418dad1aab682194a48d.html" },
+  { date:"2024.07", title:"无人机出口管制优化调整", body:"调整红外成像等载荷参数，增加高精度惯性测量设备要求，并取消部分临时管制；军事和大规模杀伤性武器用途禁限仍保留。", url:"https://www.mofcom.gov.cn/xwfb/xwfyrth/art/2024/art_a5f72afb451b49e183347a2ce0e32585.html" },
+  { date:"2024.09", title:"《两用物项出口管制条例》发布", body:"统一规范两用物项出口、过境、转运、通运、再出口和特定境外再转移，建立许可、最终用户和最终用途制度。", url:"https://flk.npc.gov.cn/detail?fileId=&id=ff808181927f0e7b019294a6bf08358f&title=%E4%B8%AD%E5%8D%8E%E4%BA%BA%E6%B0%91%E5%85%B1%E5%92%8C%E5%9B%BD%E4%B8%A4%E7%94%A8%E7%89%A9%E9%A1%B9%E5%87%BA%E5%8F%A3%E7%AE%A1%E5%88%B6%E6%9D%A1%E4%BE%8B&type=" },
+  { date:"2024.12", title:"统一两用物项管制清单生效", body:"统一清单与《两用物项出口管制条例》同步生效，取代分散清单；应以实际物项和参数而非仅 HS 编码判断。", url:"https://www.mofcom.gov.cn/zcfb/dwmygl/art/2024/art_e56833e346534981b250bae772d0cbce.html" },
+  { date:"2024.12", title:"2025 年两用物项和技术进出口许可证目录", body:"发布 2025 年度许可证目录，细化管制编码、商品描述和许可证管理方式。", url:"https://www.mofcom.gov.cn/zcfb/blgg/art/2024/art_1c34b32dcbdd466395f25e1e0d0824a3.html" },
+  { date:"2024.12", title:"对美国特定两用物项出口管制", body:"对镓、锗、锑、超硬材料等对美出口实施更严格的最终用户和最终用途审查，并限制特定石墨出口。", url:"https://exportcontrol.mofcom.gov.cn/article/zcfg/gnzcfg/zcfggzqd/202412/1072.html" },
+  { date:"2025.01", title:"28 家美国实体列入出口管制管控名单", body:"禁止向名单实体出口两用物项，并禁止向其转移中国原产两用物项；措施即时生效。", url:"https://www.mofcom.gov.cn/zcfb/dwmygl/art/2025/art_c14d6b7d45e247c596f4d3ecdda9b291.html" },
+  { date:"2025.02", title:"钨、碲、铋、钼、铟相关物项出口管制", body:"部分战略矿产、化合物及相关技术纳入许可管理，应按实际物项和参数而非仅按 HS 识别。", url:"https://aqygzj.mofcom.gov.cn/qdml/art/2025/art_a7ac614d3a784deb8f88700cdadd471c.html" },
+  { date:"2025.04", title:"部分中重稀土相关物项出口管制", body:"钐、钆、铽、镝、镥、钪、钇等相关物项按公告参数实施出口管制，涉及物项、技术和最终用途审查。", url:"https://www.mofcom.gov.cn/zfxxgk/fdzdgknr/ztfl/dwmygl/art/2025/art_99cf6e4b536d4a6796e6e2ed6d79f12c.html" },
+  { date:"2025.06", title:"海关质疑出口管制物项的核查程序", body:"海关认为货物可能属于受管制物项时，出口经营者须在规定期限内提交物项属性、用途和最终用户等证明材料。", url:"https://12335.mofcom.gov.cn/articledwmy/zcxx/dwmy/202506/1942013_1.html" },
+  { date:"2025.10", title:"超硬材料相关物项出口管制", body:"对公告列明的超硬材料相关物项实施出口许可管理，重点核查物项属性、技术参数和最终用途。", url:"https://www.mofcom.gov.cn/zfxxgk/gkml/art/2025/art_628491c002b940ad906efc445b1ee260.html" },
+  { date:"2025.10", title:"稀土生产、分离设备及原辅料出口管制", body:"对稀土生产、分离设备及相关原辅料实施出口管制，覆盖设备、部件、软件和技术。", url:"https://www.mofcom.gov.cn/zcfb/blgg/art/2025/art_9ee7af86f4274dc1ad16d6d5a6e47245.html" },
+  { date:"2025.10", title:"中重稀土物项申报与管制编码要求", body:"受管制货物需在报关单中准确填写两用物项和管制编码；接近参数但未列管的物项也应如实申报。", url:"https://www.mofcom.gov.cn/zfxxgk/gkml/art/2025/art_b9cf403808634a649ce8b3f921f4dcf3.html" },
+  { date:"2025.10", title:"境外组织和个人再出口中国稀土相关物项", body:"对含中国受管制稀土成分、使用中国稀土技术或含中国原产受管制物项的境外再出口实施许可和最终用途审查。", url:"https://www.mofcom.gov.cn/zfxxgk/fdzdgknr/ztfl/dwmygl/art/2025/art_148254ba99284928ae6e4f84d1d6f297.html" },
+  { date:"2025.10", title:"稀土相关技术出口管制", body:"对稀土开采、分离、冶炼及相关工艺技术实施出口管制，技术转移和境外再转移均需核验。", url:"https://www.mofcom.gov.cn/zfxxgk/fdzdgknr/ztfl/dwmygl/art/2025/art_619fbb66fdd24bbfb49eee4cb837ac61.html" },
+  { date:"2026.01", title:"2026 年两用物项和技术进出口许可证目录", body:"年度目录更新许可编码、商品描述和管理方式，作为 2026 年两用物项出口申报依据。", url:"https://www.mofcom.gov.cn/zwgk/zcfb/art/2025/art_c03d1e511b2b486e829d68e8f1422aff.html" },
+  { date:"2026.01", title:"对日本军事用户和军事用途的两用物项出口管制", body:"禁止向日本军事用户、军事用途及有助于提升军事能力的用途出口两用物项，并覆盖中国原产物项再出口。", url:"https://www.mofcom.gov.cn/zcfb/zgdwjjmywg/art/2026/art_5eb791b008284131855c37cc70d84e26.html" },
+  { date:"2026.02", title:"20 家日本实体列入出口管制管控名单", body:"禁止向名单实体出口两用物项及进行相关境外再转移，强化对军事相关最终用户的筛查。", url:"https://policy.mofcom.gov.cn/claw/clawContent.shtml?id=104956" },
+  { date:"2026.04", title:"7 家欧盟实体列入出口管制管控名单", body:"对名单实体实施两用物项出口和境外再转移禁限措施。", url:"https://policy.mofcom.gov.cn/claw/clawContent.shtml?id=106015" },
+  { date:"2026.06", title:"10 家美国实体列入出口管制管控名单", body:"对名单实体实施两用物项出口和境外再转移禁限措施。", url:"https://www.mofcom.gov.cn/zwgk/zcfb/art/2026/art_dfa9cc5c1e004d7fbb86f83d249e7986.html" },
+  { date:"2026.06", title:"战略矿产出口违法线索举报与核查机制", body:"建立战略矿产两用物项违法出口线索举报平台，重点关注第三国规避、拆分转运、非法技术转移和中间商。", url:"https://policy.mofcom.gov.cn/claw/clawContent.shtml?id=106193" },
+  { date:"2026.06", title:"无人机及相关设备海关申报要求", body:"要求准确申报无人机、飞艇、相关设备和零部件以及民用反无人机系统，强化物项归类与许可证核验。", url:"https://12335.mofcom.gov.cn/articledwmy/zcxx/dwmy/202607/1944334_1.html" },
+  { date:"2026.06", title:"20 家日本实体列入出口管制管控名单", body:"对新增日本实体实施两用物项出口和境外再转移禁限措施。", url:"https://www.mofcom.gov.cn/zcfb/blgg/gg/2026/art/2026/art_6607ea694b704da8ac5e863a5568e47c.html" },
+  { date:"2026.07", title:"临时禁止氦气出口", body:"临时禁止出口特定海关商品编码氦气，措施即时生效，属于专项临时出口管理。", url:"https://policy.mofcom.gov.cn/claw/clawContent.shtml?id=106307" },
+  { date:"2026.07", title:"14 家欧盟实体列入出口管制管控名单", body:"对名单实体实施两用物项出口和境外再转移禁限措施。", url:"https://www.mofcom.gov.cn/zcfb/blgg/gg/2026/index.html" },
 ];
 
 const formatB = (v:number) => v >= 1 ? `$${v.toFixed(v >= 10 ? 1 : 2)}B` : `$${(v*1000).toFixed(v < .01 ? 1 : 0)}M`;
@@ -1208,7 +1242,7 @@ function EnterpriseFlowPage({ product }: { product?: TypicalEnterpriseProduct })
           {active.enterpriseTypes.map((item,index)=><span key={item}><b>{String(index+1).padStart(2,"0")}</b>{item}</span>)}
         </div>
         <div className="enterprise-card-grid">
-          {active.enterprises.filter(company=>company.militaryStatus).map(company=><details className="enterprise-card" key={company.companyName}>
+          {active.enterprises.filter(company=>company.militaryStatus).map(company=><details className="enterprise-card" open={Boolean(company.riskChain)} key={company.companyName}>
             <summary>
               <div>
                 <span>{company.militaryStatus}</span>
@@ -1219,6 +1253,7 @@ function EnterpriseFlowPage({ product }: { product?: TypicalEnterpriseProduct })
             </summary>
             <div className="enterprise-card-body">
               <div className="enterprise-tags"><span className="enterprise-military-tag">{company.militaryStatus}</span><span>{company.industry}</span><span>{company.ownership}</span><span>{company.supplyChainRole}</span></div>
+              {company.riskChain&&<EnterpriseRiskChain chain={company.riskChain} />}
               <dl>
                 <div><dt>主营业务</dt><dd>{company.business}</dd></div>
                 <div><dt>商品用途</dt><dd>{company.productUsage}</dd></div>
@@ -1243,6 +1278,51 @@ function EnterpriseFlowPage({ product }: { product?: TypicalEnterpriseProduct })
       </>}
     </section>
   </main>;
+}
+
+const riskStatusLabel: Record<EnterpriseRiskChainStep["status"] | "cleared", string> = {
+  confirmed: "已确认",
+  signal: "筛查信号",
+  verify: "待核验",
+  cleared: "查否",
+};
+
+function EnterpriseRiskChain({ chain }: { chain: NonNullable<TypicalEnterprise["riskChain"]> }) {
+  return <section className="enterprise-risk-chain" aria-label="机制流程图">
+    {chain.mechanism&&<EnterpriseMechanismFlow mechanism={chain.mechanism} />}
+  </section>;
+}
+
+function EnterpriseMechanismFlow({ mechanism }: { mechanism: EnterpriseMechanism }) {
+  return <div className="enterprise-mechanism" aria-label="机制流程图">
+    <div className="enterprise-mechanism-suppliers">
+      <span className="enterprise-mechanism-caption">中国供应商</span>
+      {mechanism.suppliers.map((node,index)=><article className="enterprise-mechanism-node supplier" key={`${node.title}-${index}`}>
+        <span className="enterprise-mechanism-icon" aria-hidden="true">{index===0 ? "⌁" : "◈"}</span>
+        <div><strong>{node.title}</strong><p>{node.detail}</p></div>
+        <em className={`enterprise-mechanism-status ${node.status ?? "signal"}`}>{node.status ? riskStatusLabel[node.status] : "筛查信号"}</em>
+      </article>)}
+    </div>
+    <span className="enterprise-mechanism-arrow" aria-hidden="true">→</span>
+    <article className="enterprise-mechanism-node hub">
+      <span className="enterprise-mechanism-icon" aria-hidden="true">◎</span>
+      <div><span className="enterprise-mechanism-caption">印度承接</span><strong>{mechanism.hub.title}</strong><p>{mechanism.hub.detail}</p></div>
+      <em className={`enterprise-mechanism-status ${mechanism.hub.status ?? "signal"}`}>{mechanism.hub.status ? riskStatusLabel[mechanism.hub.status] : "筛查信号"}</em>
+    </article>
+    <span className="enterprise-mechanism-arrow" aria-hidden="true">→</span>
+    <article className="enterprise-mechanism-node downstream">
+      <span className="enterprise-mechanism-icon" aria-hidden="true">⇢</span>
+      <div><span className="enterprise-mechanism-caption">台湾接收</span><strong>{mechanism.downstream.title}</strong><p>{mechanism.downstream.detail}</p></div>
+      <em className={`enterprise-mechanism-status ${mechanism.downstream.status ?? "signal"}`}>{mechanism.downstream.status ? riskStatusLabel[mechanism.downstream.status] : "筛查信号"}</em>
+    </article>
+    <div className="enterprise-mechanism-endpoints">
+      {mechanism.endpoints.map((node,index)=><article className={`enterprise-mechanism-node endpoint ${node.status ?? "verify"}`} key={`${node.title}-${index}`}>
+        <span className="enterprise-mechanism-icon" aria-hidden="true">{node.status === "confirmed" ? "✓" : "?"}</span>
+        <div><strong>{node.title}</strong><p>{node.detail}</p></div>
+        <em className={`enterprise-mechanism-status ${node.status ?? "verify"}`}>{node.status ? riskStatusLabel[node.status] : "待核验"}</em>
+      </article>)}
+    </div>
+  </div>;
 }
 
 export default function App() {
@@ -1499,7 +1579,7 @@ function Home() {
       {activeRoutes.length===0&&<div className="route-empty"><span>∅</span><div><strong>当前阈值下没有路径信号</strong><p>这不代表不存在转口。默认阈值要求已公布分段贸易额均不低于 20 万美元、且 2026 已公布金额达到 2025 全年的一定比例；可继续降低阈值查看弱信号。</p><button onClick={()=>{setRouteValue(.1);setRouteGrowth(10)}}>查看弱信号</button></div></div>}
     </section>
 
-    <section className="section policy-section" id="policy"><details className="section-collapse"><summary className="section-heading collapse-heading"><div><p>CONTROL TIMELINE</p><h2>政策与管制时间线</h2></div><b>展开 ↕</b></summary><div className="timeline">{policies.map((item,index)=><a className="timeline-item" href={item.url} target="_blank" rel="noreferrer" key={item.date}><span>{item.date}</span><i>{String(index+1).padStart(2,"0")}</i><div><h3>{item.title} ↗</h3><p>{item.body}</p></div></a>)}</div><div className="control-ledger"><h3>可观察管制筛查表</h3>{controls.map(item=><a href={item.source} target="_blank" rel="noreferrer" key={item.referenceHs}><span>{item.referenceHs}</span><strong>{item.item}</strong><p>{item.parameters}</p><em>{item.status} ↗</em></a>)}</div></details></section>
+          <section className="section policy-section" id="policy"><details className="section-collapse"><summary className="section-heading collapse-heading"><div><p>CONTROL TIMELINE</p><h2>政策与管制时间线</h2></div><b>展开 ↕</b></summary><div className="timeline">{policies.map((item,index)=><a className="timeline-item" href={item.url} target="_blank" rel="noreferrer" key={`${item.date}-${item.title}`}><span>{item.date}</span><i>{String(index+1).padStart(2,"0")}</i><div><h3>{item.title} ↗</h3><p>{item.body}</p></div></a>)}</div><div className="control-ledger"><h3>可观察管制筛查表</h3>{controls.map(item=><a href={item.source} target="_blank" rel="noreferrer" key={item.referenceHs}><span>{item.referenceHs}</span><strong>{item.item}</strong><p>{item.parameters}</p><em>{item.status} ↗</em></a>)}</div></details></section>
 
     <section className="section sources-section" id="sources"><details className="section-collapse"><summary className="section-heading collapse-heading"><div><p>SOURCE CENTER</p><h2>来源、口径与可复核性</h2></div><b>展开 ↕</b></summary><div className="source-grid">{visibleSources.map(source=><a className="source-card" href={source.url} target="_blank" rel="noreferrer" key={source.tag}><span>{source.tag}</span><div><h3>{source.title} ↗</h3><p>{source.detail}</p></div><small>{source.period} · 访问 {SNAPSHOT_DATE}</small></a>)}</div><div className="method-grid"><div><span>M01</span><h3>怎么算</h3><p>同一时期、同一真实 HS6/HS8 商品物项：印度从中国进口金额 ÷ 印度该商品进口总额。父级大类不参与汇总，避免重复计算。</p></div><div><span>M02</span><h3>看哪个时间</h3><p>2025 全年数据用于横向比较；2026 年已公布月份只用于观察最新变化，不与全年金额混算。</p></div><div><span>M03</span><h3>编码怎么用</h3><p>公开来源可核验到 HS8 时使用真实 HS8；只能核验到 HS6 时如实显示 HS6，不补零、不冒充八位编码。</p></div><div><span>M04</span><h3>需要注意</h3><p>HS 编码不能替代出口管制技术参数、最终用户和最终用途判断；CIF/FOB、数量单位和分类差异也会影响结论。本工具不构成法律意见。</p></div></div></details></section>
 
