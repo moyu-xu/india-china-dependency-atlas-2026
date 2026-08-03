@@ -1289,7 +1289,38 @@ const riskStatusLabel: Record<EnterpriseRiskChainStep["status"] | "cleared", str
 
 function EnterpriseRiskChain({ chain }: { chain: NonNullable<TypicalEnterprise["riskChain"]> }) {
   return <section className="enterprise-risk-chain" aria-label="机制流程图">
+    <div className="enterprise-risk-chain-heading">
+      <div><span>SUPPLY CHAIN / EVIDENCE FLOW</span><h4>{chain.title}</h4></div>
+      <strong>证据链</strong>
+    </div>
+    <p className="enterprise-risk-chain-summary">{chain.summary}</p>
     {chain.mechanism&&<EnterpriseMechanismFlow mechanism={chain.mechanism} />}
+    <div className="enterprise-risk-branches">
+      {chain.branches.map((branch, branchIndex) => {
+        const isSuspected = /SUSPECTED|疑似|待核验/.test(branch.label);
+        return <article className={`enterprise-risk-branch ${isSuspected ? "suspected" : "known"}`} key={`${branch.title}-${branchIndex}`}>
+          <div className="enterprise-risk-branch-heading">
+            <div><span>{branch.label}</span><h5>{branch.title}</h5></div>
+            <strong>{isSuspected ? "待核验" : "已确认"}</strong>
+          </div>
+          <p className="enterprise-risk-branch-summary">{branch.summary}</p>
+          <div className="enterprise-risk-chain-track">
+            {branch.steps.map((step, stepIndex) => <article className={`enterprise-risk-step ${step.status}`} key={`${step.title}-${stepIndex}`}>
+              <div className="enterprise-risk-step-meta">
+                <span><i className="enterprise-risk-step-icon" aria-hidden="true">{String(stepIndex + 1).padStart(2, "0")}</i>{step.label}</span>
+                <em>{riskStatusLabel[step.status]}</em>
+              </div>
+              <h6>{step.title}</h6>
+              <details className="enterprise-risk-step-proof">
+                <summary>查看证据</summary>
+                <p>{step.detail}</p>
+              </details>
+            </article>)}
+          </div>
+          <div className="enterprise-risk-boundary"><strong>边界</strong><span>{branch.boundary}</span><small>{branch.sourceLabel}</small></div>
+        </article>;
+      })}
+    </div>
   </section>;
 }
 

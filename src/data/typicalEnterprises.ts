@@ -191,12 +191,62 @@ export const typicalEnterprises: TypicalEnterpriseProduct[] = [
         supplyChainRole: "国防与战略电源中游制造商；锂电电芯、模组和 BMS 集成节点。",
         productUsage: "公开资料显示其参与潜艇锂离子电池的电芯、模组与电池管理系统集成，并面向国防与战略应用提供特种电源。",
         supplyChainRelation: "该企业把锂电电芯、模组、BMS 和系统集成能力导入印度国防与战略电源链，是 HS 850760 研究中应重点穿透核验的企业节点。",
-        caseStudy: "DRDO/NSTL 2024 年简报披露，HBL 是潜艇锂离子电池技术的技术转移持有人和产业伙伴，已完成电芯、模组与自有 BMS 的产品化集成；印度海军正评估在既有和未来平台上的应用。",
-        evidenceNote: "官方资料可确认 HBL 的涉军锂电技术合作和产业伙伴身份；但没有公开证据证明中国 HS8 85076000 出口已流向该企业，具体来源仍需以进口商记录、提单或采购合同核验。",
+        caseStudy: "HBL 官方客户页确认其服务印度空军、海军和国防部实验室；公司披露同时提到 E-truck 电池使用中国电芯。页面将两条证据链分开呈现，不把中国电芯直接推定为军用电池来源。",
+        evidenceNote: "公开资料可确认 HBL 的国防客户关系，以及其 E-truck 电池业务使用中国电芯；尚无公开证据证明中国电芯进入 HBL 军用电池系统，具体批次仍需采购合同、提单或进口记录核验。",
         evidenceLevel: "高",
+        riskChain: {
+          title: "HBL 工程公司：军工客户与中国电芯业务双链",
+          summary: "两条公开证据链分别成立：HBL 服务印度国防客户；其 E-truck 电池业务使用中国电芯。当前没有证据证明二者直接连通。",
+          branches: [
+            {
+              label: "CONFIRMED DEFENCE CUSTOMER / 已确认国防客户",
+              title: "HBL → 印度空军、海军与国防部实验室",
+              summary: "HBL 官方客户页列示航空、国防客户，并列出印度空军、海军及国防部实验室长期关系。",
+              steps: [
+                {
+                  label: "01 / HBL 客户页",
+                  title: "HBL Engineering Limited",
+                  detail: "HBL 官方客户页面将航空、铁路与国防列为服务领域，并列出 Indian Air Force、Indian Navy 与 Ministry of Defence Labs。",
+                  status: "confirmed",
+                },
+                {
+                  label: "02 / 国防承接",
+                  title: "印度空军、印度海军、国防部实验室",
+                  detail: "公开资料支持客户关系与国防应用方向；未披露具体电池型号、合同批次及每批物项来源。",
+                  status: "confirmed",
+                },
+              ],
+              boundary: "该分支只确认 HBL 的国防客户关系，不证明任何特定中国电芯进入军用电池系统。",
+              sourceLabel: "来源：HBL 官方客户页",
+            },
+            {
+              label: "CHINESE CELL TRACK / 中国电芯业务链",
+              title: "中国电芯 → HBL E-truck 电池",
+              summary: "HBL 公司文件提到 E-truck 电池由 HBL 组装、使用中国电芯；该业务被单独标为商用/工业电动车电池链。",
+              steps: [
+                {
+                  label: "01 / 电芯来源",
+                  title: "中国电芯供应商",
+                  detail: "HBL 公司披露/交易所文件称，其 E-truck 电池使用中国电芯；文件未公开供应商名称、HS8 或逐批进口记录。",
+                  status: "confirmed",
+                },
+                {
+                  label: "02 / 印度组装",
+                  title: "HBL E-truck 电池业务",
+                  detail: "HBL 在印度完成电池组装与系统集成，面向 E-truck 等商用/工业车辆，不指向军用电池系统。",
+                  status: "confirmed",
+                },
+              ],
+              boundary: "该分支不应与 HBL 国防客户链合并解读；尚不能据此认定中国电芯流入印度军用电池。",
+              sourceLabel: "来源：BSE India 公司文件（HBL 披露）",
+            },
+          ],
+        },
         sources: [
           { institution: "DRDO", title: "DRDO Newsletter, December 2024: Li-ion battery test facility at NSTL", published: "2024-12", type: "政府/监管", url: "https://www.drdo.gov.in/drdo/sites/default/files/newsletter-document/NL_Dec2024.pdf" },
           { institution: "HBL Batteries", title: "Defense Applications", type: "企业官网", url: "https://www.hblbatteries.com/Defense-app.html" },
+          { institution: "HBL Engineering", title: "Our Customers", type: "企业官网", url: "https://hbl.in/Our-Customers.html" },
+          { institution: "BSE India", title: "HBL Engineering Limited 公司披露（含 E-truck 中国电芯说明）", published: "2025", type: "公司披露", url: "https://www.bseindia.com/xml-data/corpfiling/AttachLive/8867270e-616f-4352-9592-cc4e30cd1cfb.pdf" },
           { institution: "HBL Engineering", title: "Annual Report 2020-21", published: "2021", type: "公司披露", url: "https://www.hbl.in/reports/annualreports/ar2020-2021.pdf" },
         ],
       },
@@ -621,6 +671,56 @@ export const typicalEnterprises: TypicalEnterpriseProduct[] = [
     enterpriseTypes: ["工业泵与流体控制企业", "机床维护与精密加工企业", "工程装备零部件服务商"],
     flow: ["中国零部件供应商", "印度工业装备企业", "装配、维保与系统集成", "工业与基础设施终端"],
     enterprises: [
+      {
+        companyName: "Sidh Sales Syndicate",
+        englishName: "Sidh Sales Syndicate (Delhi)",
+        militaryStatus: "涉军企业",
+        industry: "工业轴承与国防装备配件贸易",
+        ownership: "印度私营贸易企业",
+        business: "机械轴承、零部件贸易与国防采购配套。",
+        supplyChainRole: "国防装备零部件供应与贸易节点。",
+        productUsage: "线材滚轮轴承用于 Jabalpur Gun Carriage Factory 的 155mm × 45 calibre Dhanush 榴弹炮。",
+        supplyChainRelation: "印度国防部公开通报将其列为向 Gun Carriage Factory 供货的贸易节点；涉案轴承被初步查明由中国企业制造，而非采购单指定的德国 CRB。",
+        caseStudy: "印度国防部 2018 年通报称，Jabalpur Gun Carriage Factory 采购的 6 个 wire race roller bearings 来自 Sidh Sales Syndicate，原采购要求为 CRB Germany，但初步调查显示轴承由中国企业制造；OFB 已暂停与该供应商的业务并转交 CBI 调查。",
+        evidenceNote: "该案例直接连接中国制造轴承、印度国防采购节点和 Dhanush 榴弹炮；公开通报没有给出中国制造商名称、HS8、进口批次或最终装配批次，仍应以采购档案和海关记录复核。",
+        evidenceLevel: "高",
+        riskChain: {
+          title: "中国轴承 → Sidh Sales Syndicate → Dhanush 榴弹炮",
+          summary: "这是公开披露的国防装备零部件供应异常案例：采购文件指定德国来源，初步调查发现涉案轴承由中国企业制造。",
+          mechanism: {
+            suppliers: [
+              { title: "中国制造企业", detail: "线材滚轮轴承；制造商名称未在 PIB 通报中公开", status: "confirmed" },
+            ],
+            hub: { title: "Sidh Sales Syndicate（德里）", detail: "国防采购贸易与供货节点", status: "confirmed" },
+            downstream: { title: "Gun Carriage Factory, Jabalpur", detail: "印度兵工厂，Dhanush 榴弹炮制造节点", status: "confirmed" },
+            endpoints: [
+              { title: "Dhanush 155mm × 45 calibre 榴弹炮", detail: "印度国防部/PIB确认的国防装备终端", status: "confirmed" },
+              { title: "OFB / CBI 调查", detail: "OFB暂停与供应商交易并转交CBI调查", status: "confirmed" },
+            ],
+          },
+          branches: [
+            {
+              label: "CONFIRMED DEFENCE FLOW / 已确认国防流向",
+              title: "轴承采购 → 兵工厂 → Dhanush 榴弹炮",
+              summary: "公开国防部通报明确了采购节点、兵工厂、数量和装备型号。",
+              steps: [
+                { label: "01 / 中国制造", title: "中国企业制造轴承", detail: "初步调查显示涉案轴承由中国企业制造；具体制造商名称未公开。", status: "confirmed" },
+                { label: "02 / 印度供货", title: "Sidh Sales Syndicate（德里）", detail: "向 Gun Carriage Factory, Jabalpur 供应 6 个 wire race roller bearings。", status: "confirmed" },
+                { label: "03 / 兵工厂采购", title: "Gun Carriage Factory, Jabalpur", detail: "轴承用于 155mm × 45 calibre Dhanush 榴弹炮制造。", status: "confirmed" },
+                { label: "04 / 国防装备", title: "Dhanush 榴弹炮", detail: "Dhanush 获印度国防部/印度陆军批量生产许可。", status: "confirmed" },
+              ],
+              boundary: "通报没有公开 HS8、具体中国制造商、订单批次或装配序列号；不据此推断更大范围的中国轴承流入。",
+              sourceLabel: "来源：印度国防部 PIB 通报、OFB现代化通报",
+            },
+          ],
+        },
+        sources: [
+          reportSource,
+          { institution: "印度国防部", title: "Supply of Fake Chinese Parts for Dhanush Guns", published: "2018-03-05", type: "政府/监管", url: "https://www.pib.gov.in/PressReleasePage.aspx?PRID=1522500" },
+          { institution: "印度国防部", title: "Modernisation of Ordnance Factories", published: "2019", type: "政府/监管", url: "https://www.pib.gov.in/newsite/PrintRelease.aspx?lang=2&reg=48&relid=188533" },
+          { institution: "印度国防部", title: "OFB Gets Bulk Production Clearance for Dhanush Artillery Gun", published: "2019-02-19", type: "政府/监管", url: "https://www.pib.gov.in/newsite/PrintRelease.aspx?lang=2&reg=48&relid=188788" },
+        ],
+      },
       {
         companyName: "Sulzer Pumps India",
         militaryStatus: "涉军企业",
