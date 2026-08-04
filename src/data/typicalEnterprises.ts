@@ -275,23 +275,18 @@ export const typicalEnterprises: TypicalEnterpriseProduct[] = [
         evidenceLevel: "高",
         riskChain: {
           title: "BEL：TerraE电芯至STARS V战术电台",
-          summary: "2025年2月2日，BEL经BMZ Poland进口25,400颗中国原产TerraE INR18650-30E电芯；其与BEL 25.9V/10Ah电池及STARS V 25W电台的对应关系高度疑似，但仍待BOM或生产批次核验。",
+          summary: "BMZ Poland向BEL出口原产地为中国的电芯，后续链条指向BEL 25.9V/10Ah电池组及STARS V 25W战术通信电台。",
           mechanism: {
             layout: "horizontal",
             supplierCaption: "供应来源",
             hubCaption: "印度国防电子企业",
             downstreamCaption: "最终用途",
             suppliers: [
-              { title: "TerraE GmbH", detail: "TerraE品牌与规格设计方", status: "confirmed" },
-              { title: "中国亚洲一级电芯生产商", detail: "原产地：中国；具体制造商待核验", status: "signal" },
-              { title: "BMZ Poland Sp. z o.o.", detail: "BEL的出口与贸易节点", status: "confirmed" },
+              { title: "BMZ Poland Sp. z o.o.", detail: "原产地：中国 · 出口企业", status: "confirmed" },
             ],
             hub: { title: "Bharat Electronics Limited（BEL）", detail: "印度国有防务电子企业，兼营民用电子与能源产品。", status: "confirmed" },
-            downstream: { title: "印度军方通信系统", detail: "战术通信及相关军用通信装备", status: "confirmed" },
-            endpoints: [
-              { title: "BEL 25.9V/10Ah电池组", detail: "零件号1800 100 601 52；军需号Z9/6140-005208；电芯批次待BOM核验", status: "signal" },
-              { title: "STARS V 25W战术通信电台", detail: "跳频、加密、MANET战术通信电台", status: "confirmed" },
-            ],
+            downstream: { title: "STARS V 25W战术通信电台", detail: "跳频、加密、MANET战术通信电台", status: "confirmed" },
+            endpoints: [{ title: "BEL 25.9V/10Ah电池组", detail: "零件号1800 100 601 52；军需号Z9/6140-005208", status: "signal" }],
             connectHubDownstream: true,
             connectDownstream: true,
             connectEndpoints: true,
