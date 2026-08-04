@@ -1336,8 +1336,8 @@ function EnterpriseMechanismCluster({ mechanisms }: { mechanisms: EnterpriseMech
     const horizontalNodes = [
       ...primary.suppliers,
       primary.hub,
-      primary.downstream,
       ...primary.endpoints,
+      primary.downstream,
     ];
     return <div className="enterprise-mechanism enterprise-mechanism-horizontal" aria-label="产品到军用终端的水平链条">
       {horizontalNodes.map((node, index) => <Fragment key={`${node.title}-${index}`}>
@@ -1346,7 +1346,7 @@ function EnterpriseMechanismCluster({ mechanisms }: { mechanisms: EnterpriseMech
           <div>{index === 0 && <span className="enterprise-mechanism-caption">{primary.supplierCaption ?? "中国侧电芯节点"}</span>}{node === primary.hub && <span className="enterprise-mechanism-caption">{primary.hubCaption ?? "印度承接企业"}</span>}{node === primary.downstream && <span className="enterprise-mechanism-caption">{primary.downstreamCaption ?? "电池包节点"}</span>}<strong>{node.title}</strong><p>{node.detail}</p></div>
           {node.status !== "confirmed" && <em className={`enterprise-mechanism-status ${node.status ?? "signal"}`}>{node.status ? riskStatusLabel[node.status] : "筛查信号"}</em>}
         </article>
-        {index < horizontalNodes.length - 1 && node !== primary.downstream && <span className={`enterprise-mechanism-arrow horizontal-chain-arrow ${horizontalNodes[index + 1].status !== "confirmed" ? "pending" : ""}`} aria-hidden="true">→</span>}
+        {index < horizontalNodes.length - 1 && <span className={`enterprise-mechanism-arrow horizontal-chain-arrow ${horizontalNodes[index + 1].status !== "confirmed" ? "pending" : ""}`} aria-hidden="true">→</span>}
       </Fragment>)}
     </div>;
   }
