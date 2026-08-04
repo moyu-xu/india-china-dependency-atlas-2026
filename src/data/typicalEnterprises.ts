@@ -282,7 +282,8 @@ export const typicalEnterprises: TypicalEnterpriseProduct[] = [
             hubCaption: "印度国防电子企业",
             downstreamCaption: "最终用途",
             suppliers: [
-              { title: "TerraE GmbH", detail: "INR18650-30E电芯 · 3.65V/3000mAh", status: "confirmed" },
+              { title: "TerraE GmbH", detail: "TerraE品牌与规格设计方", status: "confirmed" },
+              { title: "中国亚洲一级电芯生产商", detail: "原产地：中国；具体制造商待核验", status: "signal" },
               { title: "BMZ Poland Sp. z o.o.", detail: "BEL的出口与贸易节点", status: "confirmed" },
             ],
             hub: { title: "Bharat Electronics Limited（BEL）", detail: "印度国有防务电子企业，兼营民用电子与能源产品。", status: "confirmed" },
