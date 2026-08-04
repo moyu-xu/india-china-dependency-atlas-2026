@@ -33,12 +33,21 @@ export type EnterpriseMechanism = {
   hub: EnterpriseMechanismNode;
   downstream: EnterpriseMechanismNode;
   endpoints: EnterpriseMechanismNode[];
+  layout?: "fanin" | "horizontal";
+  supplierCaption?: string;
+  hubCaption?: string;
+  downstreamCaption?: string;
+  /** Whether to draw the arrow from the Indian hub to the downstream context node. */
+  connectHubDownstream?: boolean;
+  connectDownstream?: boolean;
+  connectEndpoints?: boolean;
 };
 
 export type EnterpriseRiskChain = {
   title: string;
   summary: string;
   mechanism?: EnterpriseMechanism;
+  mechanisms?: EnterpriseMechanism[];
   branches: EnterpriseRiskChainBranch[];
 };
 
@@ -264,8 +273,33 @@ export const typicalEnterprises: TypicalEnterpriseProduct[] = [
         caseStudy: "BEL 官方能源储存页面披露，公司设立专门业务单元发展锂离子电芯/电池，并列示潜艇电池模组、坦克电池与 BMS 等产品。",
         evidenceNote: "企业公开页面可以确认 BEL 的国防背景和锂电/战略电源产品方向；不能仅凭该资料确认其采购中国电池或具体采购批次。",
         evidenceLevel: "高",
+        riskChain: {
+          title: "BEL：中国来源电芯供应链",
+          summary: "公开贸易记录显示，BEL经BMZ Poland采购中国原产TerraE电芯；其中21700型号与比克N21700CG-50高度匹配，35E3与三星SDI型号匹配，30E原厂仍未披露。",
+          mechanism: {
+            layout: "horizontal",
+            supplierCaption: "中国侧电芯节点",
+            hubCaption: "印度国防企业",
+            downstreamCaption: "电池包节点",
+            suppliers: [
+              { title: "郑州比克 N21700CG-50", detail: "中国原产电芯 · 3.6V/5Ah", status: "confirmed" },
+              { title: "BMZ Poland", detail: "向BEL供货的贸易节点", status: "signal" },
+            ],
+            hub: { title: "Bharat Electronics Limited（BEL）", detail: "印度国防部体系国防电子企业，公开业务覆盖能源储存、电池模组与BMS。", status: "confirmed" },
+            downstream: { title: "25.9V/10Ah STARS V锂电池包", detail: "BEL采购记录直接写明STARS V 25W电池包；电芯批次与电池包之间仍待BOM核验。", status: "signal" },
+            endpoints: [{ title: "STARS V 25W安全战术电台", detail: "跳频、加密、MANET战术通信电台", status: "confirmed" }],
+            connectHubDownstream: true,
+            connectDownstream: true,
+            connectEndpoints: true,
+          },
+          branches: [],
+        },
         sources: [
           { institution: "Bharat Electronics", title: "Energy Storage Product", type: "企业官网", url: "https://bel-india.in/energy-storage-product/" },
+          { institution: "ImportGenius", title: "BMZ Poland → Bharat Electronics Limited：TerraE电芯进口记录", published: "2023-09-13 / 2024-03-02 / 2024-03-08 / 2025-02-02", type: "贸易数据库", url: "https://www.importgenius.com/india/suppliers/bmz-poland-sp-z-o-o" },
+          { institution: "BAK Battery", title: "N21700CG-50圆柱电芯规格书", type: "企业官网", url: "https://www.bakpower.com/uploads/cpxl_table1_en/N21700CG-50_en.pdf" },
+          { institution: "Samsung SDI", title: "INR18650-35E3规格书", type: "企业官网", url: "https://www.hueckmann-shop.de/var/StorageHueckmann/Datenblaetter/140284.pdf" },
+          { institution: "BMZ Group", title: "BMZ中国生产基地与TerraE代工说明", type: "企业官网", url: "https://bmz-battery.com/en/bmz-company/locations-en?rCH=2" },
         ],
       },
       {
@@ -315,7 +349,25 @@ export const typicalEnterprises: TypicalEnterpriseProduct[] = [
         caseStudy: "作为明确涉军企业案例纳入本页，重点关注其国防与航空航天制造业务对高可靠电源和储能系统的需求线索。",
         evidenceNote: "具体采购商品、来源国及批次仍需结合进口商记录、提单或采购合同进一步核验。",
         evidenceLevel: "高",
-        sources: [],
+        sources: [
+          { institution: "Trademo", title: "IMC Shanghai → Tata Advanced Systems：Development Kit贸易记录（2025-11-19）", type: "贸易数据库", url: "https://www.trademo.com/companies/imc-shanghai/54020453" },
+          { institution: "Intel", title: "Intel 2025 Binding Corporate Rules：上海与印度Altera实体清单", type: "公司披露", url: "https://www.intel.co.jp/content/dam/www/public/us/en/documents/corporate-information/intel-bcr-eea-final-2025.pdf" },
+        ],
+        riskChain: {
+          title: "TASL：研发开发套件去向核验",
+          summary: "公开记录仅能确认中国出口节点向TASL交付研发开发套件；TASL后续具体防务项目和军用产品尚未公开对应关系。",
+          mechanism: {
+            layout: "horizontal",
+            supplierCaption: "中国出口节点",
+            hubCaption: "印度承接企业",
+            downstreamCaption: "待核验去向",
+            suppliers: [{ title: "英特尔移动通信技术（上海）有限公司", detail: "2025-11-19；FOC研发开发套件；HS 854370；型号与原产国未披露", status: "confirmed" }],
+            hub: { title: "Tata Advanced Systems Limited（TASL）", detail: "班加罗尔；国防与航空航天系统集成企业", status: "confirmed" },
+            downstream: { title: "防务电子 / 监视系统研发（项目待核验）", detail: "尚无公开BOM、采购合同或项目文件将该套件对应到具体军用产品", status: "verify" },
+            endpoints: [],
+          },
+          branches: [],
+        },
       },
     ],
     conclusion: "锂离子蓄电池进入印度后，主要承接主体包括专业电池制造商、电池包集成商和新能源整车企业；公开来源同时可定位 HBL、BEL、BHEL 等涉军或战略电源企业。公开材料能够确认其相关业务与产品能力，但具体中国来源电池是否流向某一企业，仍需以进口商记录、提单或采购合同核验。",
@@ -557,15 +609,88 @@ export const typicalEnterprises: TypicalEnterpriseProduct[] = [
         supplyChainRelation: "公司以印度本地制造为主，但处在工程机械关键零部件和整机竞争格局的核心位置，是判断进口零部件承接方向的重要参照。",
         caseStudy: "JCB India 是印度轮式装载机反倾销调查申请方之一，说明其与中国工程机械进口竞争存在直接关联。",
         evidenceNote: "公开资料能确认其整机制造能力、印度供应链和行业地位；具体从中国采购的零部件数量与金额需要企业级采购或海关明细验证。",
-        evidenceLevel: "中",
+        evidenceLevel: "高",
+        riskChain: {
+          title: "JCB India → 印度三军：越野叉车国防采购合同",
+          summary: "印度国防部于 2025-02-20 公布与 ACE、JCB India 签署 1,868 台越野叉车（RTFLT）采购合同，合同总额约 697.35 crore 卢比（约 69.7 亿卢比）。公告确认军用终端，但未披露中国来源或具体进口批次。",
+          mechanism: {
+            supplierCaption: "供应来源待核验",
+            hubCaption: "印度合同主体",
+            downstreamCaption: "印度军方接收",
+            suppliers: [{ title: "供应来源未披露", detail: "国防部公告未列原产地、供应商或零部件进口批次", status: "verify" }],
+            hub: { title: "JCB India Limited", detail: "越野叉车采购合同主体之一", status: "confirmed" },
+            downstream: { title: "印度陆军、空军、海军", detail: "RTFLT 用于战斗与后勤支援", status: "confirmed" },
+            endpoints: [{ title: "RTFLT 越野叉车", detail: "ACE 与 JCB 合同合计 1,868 台；JCB 单独份额未披露", status: "confirmed" }],
+            connectDownstream: false,
+            connectEndpoints: false,
+          },
+          mechanisms: [
+            {
+              supplierCaption: "产品",
+              suppliers: [{ title: "杰西博工程机械（上海）有限公司", detail: "冷却软管、旋转接头", status: "confirmed" }],
+              hub: { title: "JCB India Limited", detail: "企业级采购与生产体系", status: "confirmed" },
+              downstream: { title: "缺少RTFLT物料清单、合同号及批次对应关系", detail: "该产品记录暂不能直接归入 JCB 军用 RTFLT 批次。", status: "verify" },
+              endpoints: [{ title: "RTFLT 越野叉车", detail: "具体产品用途待核验", status: "verify" }],
+              connectHubDownstream: false,
+              connectDownstream: false,
+              connectEndpoints: false,
+            },
+            {
+              supplierCaption: "产品",
+              suppliers: [{ title: "鹰普流体科技（镇江）有限公司", detail: "摆线液压马达", status: "confirmed" }],
+              hub: { title: "JCB India Limited", detail: "企业级采购与生产体系", status: "confirmed" },
+              downstream: { title: "缺少RTFLT物料清单、合同号及批次对应关系", detail: "该产品记录暂不能直接归入 JCB 军用 RTFLT 批次。", status: "verify" },
+              endpoints: [{ title: "RTFLT 越野叉车", detail: "具体产品用途待核验", status: "verify" }],
+              connectHubDownstream: false,
+              connectDownstream: false,
+              connectEndpoints: false,
+            },
+            {
+              supplierCaption: "产品",
+              suppliers: [{ title: "龙合智能装备制造有限公司", detail: "工具架横梁、上横梁、配重", status: "confirmed" }],
+              hub: { title: "JCB India Limited", detail: "企业级采购与生产体系", status: "confirmed" },
+              downstream: { title: "缺少RTFLT物料清单、合同号及批次对应关系", detail: "该产品记录暂不能直接归入 JCB 军用 RTFLT 批次。", status: "verify" },
+              endpoints: [{ title: "RTFLT 越野叉车", detail: "具体产品用途待核验", status: "verify" }],
+              connectHubDownstream: false,
+              connectDownstream: false,
+              connectEndpoints: false,
+            },
+            {
+              supplierCaption: "产品",
+              suppliers: [{ title: "双飞无油轴承集团股份有限公司", detail: "双金属滑动轴套", status: "signal" }],
+              hub: { title: "JCB India Limited", detail: "企业级采购与生产体系", status: "confirmed" },
+              downstream: { title: "缺少RTFLT物料清单、合同号及批次对应关系", detail: "该产品记录暂不能直接归入 JCB 军用 RTFLT 批次。", status: "verify" },
+              endpoints: [{ title: "RTFLT 越野叉车", detail: "具体产品用途待核验", status: "verify" }],
+              connectHubDownstream: false,
+              connectDownstream: false,
+              connectEndpoints: false,
+            },
+          ],
+          branches: [{
+            label: "CONFIRMED DEFENCE CONTRACT / 已确认涉军合同",
+            title: "JCB India → 印度三军",
+            summary: "公开国防部公告确认 JCB India 参与越野叉车采购，终端为印度三军。",
+            steps: [
+              { label: "01 / 合同", title: "印度国防部", detail: "2025-02-20 公告显示已与 ACE、JCB India 签署 RTFLT 采购合同。", status: "confirmed" },
+              { label: "02 / 终端", title: "印度陆军、空军、海军", detail: "公告称该装备服务战斗与后勤任务。", status: "confirmed" },
+            ],
+            boundary: "该证据确认军用终端，不证明 JCB India 已从中国采购相关零部件。",
+            sourceLabel: "来源：印度国防部 PIB，2025-02-20",
+          }],
+        },
         sources: [
           reportSource,
           { institution: "JCB India", title: "About JCB India", type: "企业官网", url: "https://www.jcb.com/en-IN/explore/insight/about-jcb-india/" },
+          { institution: "杰西博工程机械（上海）有限公司", title: "JCB在中国", published: "2025", type: "企业官网", url: "https://www.jcb.com.cn/about/china.html" },
+          { institution: "鹰普流体科技（镇江）有限公司", title: "JCB India进口记录", published: "2025", type: "贸易数据库", url: "https://www.importgenius.cn/india/suppliers/impro-fluidtek-zhenjiang-limited" },
+          { institution: "龙合智能装备制造有限公司", title: "JCB India进口记录", published: "2025", type: "贸易数据库", url: "https://www.importgenius.cn/india/suppliers/longhe-intelligent-equipment-manufacturing-co-l" },
+          { institution: "双飞无油轴承集团股份有限公司", title: "JCB India进口记录", published: "2025", type: "贸易数据库", url: "https://www.importgenius.com/india/importers/jcb-india-ltd" },
           { institution: "DGTR, Government of India", title: "Anti-dumping investigation concerning imports of Wheel Loaders originating in or exported from China PR", published: "2022-10-04", type: "政府/监管", url: "https://dgtr.gov.in/en/anti-dumping-cases/anti-dumping-investigation-concerning-imports-wheel-loaders-originating-or" },
         ],
       },
       {
         companyName: "BEML Limited",
+        militaryStatus: "军工企业",
         chineseName: "BEML 有限公司",
         englishName: "BEML Limited",
         industry: "重型装备、矿山机械、工程机械、轨道交通和国防装备",
@@ -576,7 +701,35 @@ export const typicalEnterprises: TypicalEnterpriseProduct[] = [
         supplyChainRelation: "BEML 承接矿山、基础设施和政府项目装备需求，进口零部件可能进入其整机制造、维修和售后保障体系。",
         caseStudy: "BEML 被公开报道为印度对华轮式装载机反倾销调查的支持方之一，反映其在本土重型装备产业保护和替代中的位置。",
         evidenceNote: "公开来源可确认其矿山与工程机械产品线和国内制造能力；具体中国零部件采购规模仍需逐票或供应商数据核验。",
-        evidenceLevel: "中",
+        evidenceLevel: "高",
+        riskChain: {
+          title: "BEML → 印度国防部/ADA：国防装备与航空项目",
+          summary: "BEML 为印度国防部体系国有企业。2025 年公开披露包括国防部发动机订单及 AMCA 项目合作，军工属性明确；公开材料未披露对应中国物项进口批次。",
+          mechanism: {
+            supplierCaption: "供应来源待核验",
+            hubCaption: "印度国防企业",
+            downstreamCaption: "国防项目承接",
+            suppliers: [{ title: "供应来源未披露", detail: "公开订单未列中国供应商、原产地或 HS8 批次", status: "verify" }],
+            hub: { title: "BEML Limited", detail: "印度国防部体系国有企业", status: "confirmed" },
+            downstream: { title: "印度国防部 / ADA", detail: "发动机供应与 AMCA 项目合作", status: "confirmed" },
+            endpoints: [
+              { title: "国防部发动机订单", detail: "2025-12-16，约 11 亿卢比（110 crore）", status: "confirmed" },
+              { title: "AMCA 项目合作", detail: "2025-09-26，与 Bharat Forge、Data Patterns 签署 MoU", status: "confirmed" },
+            ],
+            connectDownstream: false,
+          },
+          branches: [{
+            label: "CONFIRMED DEFENCE ENTERPRISE / 已确认军工企业",
+            title: "BEML → 印度国防部与 AMCA 项目",
+            summary: "BEML 的国防部订单与航空项目合作均有公司正式披露支持。",
+            steps: [
+              { label: "01 / 企业属性", title: "BEML Limited", detail: "BEML 官方投资者资料将其列为国防部体系企业。", status: "confirmed" },
+              { label: "02 / 项目承接", title: "发动机订单与 AMCA 合作", detail: "2025 年披露分别对应国防部发动机供应和先进中型战斗机项目。", status: "confirmed" },
+            ],
+            boundary: "公开材料确认 BEML 的军工属性和项目关系，不证明其工程车辆零部件来自中国。",
+            sourceLabel: "来源：BEML 公司披露，2025-09-26、2025-12-16",
+          }],
+        },
         sources: [
           reportSource,
           { institution: "BEML", title: "Mining & Construction", type: "企业官网", url: "https://www.bemlindia.in/mining-and-construction/" },
@@ -615,11 +768,40 @@ export const typicalEnterprises: TypicalEnterpriseProduct[] = [
         supplyChainRelation: "ACE 是印度叉车及物料搬运设备、起重机市场的代表性本土企业；本案例优先用于观察叉车及其关键零部件在印度本地制造链中的承接方向。",
         caseStudy: "公司官网披露其拥有叉车等物料搬运设备、移动式起重机和塔式起重机产品线，覆盖制造、物流与基础设施终端。",
         evidenceNote: "公开来源能证明其产品类型和市场角色；具体中国来源零部件需通过 HS8、进口商名称和供应商记录交叉验证。",
-        evidenceLevel: "中",
+        evidenceLevel: "高",
+        riskChain: {
+          title: "ACE Limited → 印度三军：越野叉车国防采购合同",
+          summary: "印度国防部于 2025-02-20 公布与 ACE、JCB India 签署 1,868 台越野叉车（RTFLT）采购合同，合同总额约 697.35 crore 卢比（约 69.7 亿卢比）。公告确认军用终端，但未披露中国来源或具体进口批次。",
+          mechanism: {
+            supplierCaption: "供应来源待核验",
+            hubCaption: "印度合同主体",
+            downstreamCaption: "印度军方接收",
+            suppliers: [
+              { title: "安徽江淮银联重工进出口有限公司", detail: "2025-02-12：AF80D 集装箱叉车，1 台", status: "confirmed" },
+              { title: "博索尼（河北）货叉制造有限公司", detail: "2025-04-19：叉车货叉 80 件，型号 H51E12545122001（3A125×45×1220）", status: "confirmed" },
+              { title: "合肥长源液压股份有限公司", detail: "叉车液压阀 CDB7F1-F15L-T/AZOOA，10 件", status: "confirmed" },
+              { title: "浙江金道科技股份有限公司", detail: "叉车变速箱、湿式驱动桥产品；公开贸易记录显示与 ACE 存在进口商关系", status: "signal" },
+              { title: "Donghai County Lantian Auto Wheel", detail: "2023-04-26：多批次叉车轮辋交易", status: "confirmed" },
+            ],
+            hub: { title: "Action Construction Equipment Limited", detail: "越野叉车采购合同主体之一", status: "confirmed" },
+            downstream: { title: "印度陆军、空军、海军", detail: "RTFLT 用于战斗与后勤支援", status: "confirmed" },
+            endpoints: [{ title: "RTFLT 越野叉车", detail: "ACE 与 JCB 合同合计 1,868 台；ACE 单独份额未披露", status: "confirmed" }],
+            connectHubDownstream: false,
+            connectDownstream: true,
+            connectEndpoints: false,
+          },
+          branches: [],
+        },
         sources: [
           reportSource,
           { institution: "Action Construction Equipment", title: "Products", type: "企业官网", url: "https://www.ace-cranes.com/products/" },
           { institution: "Action Construction Equipment", title: "Investor Relations", type: "公司披露", url: "https://www.ace-cranes.com/investor-relations/" },
+          { institution: "ImportGenius", title: "Action Construction Equipment 进口商记录", published: "2025", type: "贸易数据库", url: "https://www.importgenius.com/india/importers/action-construction-equipment-ltd" },
+          { institution: "博索尼（河北）货叉制造有限公司", title: "公司介绍", type: "企业官网", url: "https://www.bolzoni-auramo.com.cn/company/company.php" },
+          { institution: "合肥长源液压股份有限公司", title: "公司官网", type: "企业官网", url: "https://www.hchchydraulic.com/" },
+          { institution: "浙江金道科技股份有限公司", title: "关于金道", type: "企业官网", url: "https://www.jindaotech.com/about/" },
+          { institution: "Donghai County Lantian Auto Wheel", title: "叉车轮辋产品与企业介绍", type: "企业官网", url: "https://lantianwheel.goldsupplier.com/about.html" },
+          { institution: "印度国防部 PIB", title: "RTFLT采购合同公告", published: "2025-02-20", type: "政府/监管", url: "https://www.pib.gov.in/PressReleasePage.aspx?PRID=2104951" },
         ],
       },
       {
@@ -672,56 +854,6 @@ export const typicalEnterprises: TypicalEnterpriseProduct[] = [
     flow: ["中国零部件供应商", "印度工业装备企业", "装配、维保与系统集成", "工业与基础设施终端"],
     enterprises: [
       {
-        companyName: "Sidh Sales Syndicate",
-        englishName: "Sidh Sales Syndicate (Delhi)",
-        militaryStatus: "涉军企业",
-        industry: "工业轴承与国防装备配件贸易",
-        ownership: "印度私营贸易企业",
-        business: "机械轴承、零部件贸易与国防采购配套。",
-        supplyChainRole: "国防装备零部件供应与贸易节点。",
-        productUsage: "线材滚轮轴承用于 Jabalpur Gun Carriage Factory 的 155mm × 45 calibre Dhanush 榴弹炮。",
-        supplyChainRelation: "印度国防部公开通报将其列为向 Gun Carriage Factory 供货的贸易节点；涉案轴承被初步查明由中国企业制造，而非采购单指定的德国 CRB。",
-        caseStudy: "印度国防部 2018 年通报称，Jabalpur Gun Carriage Factory 采购的 6 个 wire race roller bearings 来自 Sidh Sales Syndicate，原采购要求为 CRB Germany，但初步调查显示轴承由中国企业制造；OFB 已暂停与该供应商的业务并转交 CBI 调查。",
-        evidenceNote: "该案例直接连接中国制造轴承、印度国防采购节点和 Dhanush 榴弹炮；公开通报没有给出中国制造商名称、HS8、进口批次或最终装配批次，仍应以采购档案和海关记录复核。",
-        evidenceLevel: "高",
-        riskChain: {
-          title: "中国轴承 → Sidh Sales Syndicate → Dhanush 榴弹炮",
-          summary: "这是公开披露的国防装备零部件供应异常案例：采购文件指定德国来源，初步调查发现涉案轴承由中国企业制造。",
-          mechanism: {
-            suppliers: [
-              { title: "中国制造企业", detail: "线材滚轮轴承；制造商名称未在 PIB 通报中公开", status: "confirmed" },
-            ],
-            hub: { title: "Sidh Sales Syndicate（德里）", detail: "国防采购贸易与供货节点", status: "confirmed" },
-            downstream: { title: "Gun Carriage Factory, Jabalpur", detail: "印度兵工厂，Dhanush 榴弹炮制造节点", status: "confirmed" },
-            endpoints: [
-              { title: "Dhanush 155mm × 45 calibre 榴弹炮", detail: "印度国防部/PIB确认的国防装备终端", status: "confirmed" },
-              { title: "OFB / CBI 调查", detail: "OFB暂停与供应商交易并转交CBI调查", status: "confirmed" },
-            ],
-          },
-          branches: [
-            {
-              label: "CONFIRMED DEFENCE FLOW / 已确认国防流向",
-              title: "轴承采购 → 兵工厂 → Dhanush 榴弹炮",
-              summary: "公开国防部通报明确了采购节点、兵工厂、数量和装备型号。",
-              steps: [
-                { label: "01 / 中国制造", title: "中国企业制造轴承", detail: "初步调查显示涉案轴承由中国企业制造；具体制造商名称未公开。", status: "confirmed" },
-                { label: "02 / 印度供货", title: "Sidh Sales Syndicate（德里）", detail: "向 Gun Carriage Factory, Jabalpur 供应 6 个 wire race roller bearings。", status: "confirmed" },
-                { label: "03 / 兵工厂采购", title: "Gun Carriage Factory, Jabalpur", detail: "轴承用于 155mm × 45 calibre Dhanush 榴弹炮制造。", status: "confirmed" },
-                { label: "04 / 国防装备", title: "Dhanush 榴弹炮", detail: "Dhanush 获印度国防部/印度陆军批量生产许可。", status: "confirmed" },
-              ],
-              boundary: "通报没有公开 HS8、具体中国制造商、订单批次或装配序列号；不据此推断更大范围的中国轴承流入。",
-              sourceLabel: "来源：印度国防部 PIB 通报、OFB现代化通报",
-            },
-          ],
-        },
-        sources: [
-          reportSource,
-          { institution: "印度国防部", title: "Supply of Fake Chinese Parts for Dhanush Guns", published: "2018-03-05", type: "政府/监管", url: "https://www.pib.gov.in/PressReleasePage.aspx?PRID=1522500" },
-          { institution: "印度国防部", title: "Modernisation of Ordnance Factories", published: "2019", type: "政府/监管", url: "https://www.pib.gov.in/newsite/PrintRelease.aspx?lang=2&reg=48&relid=188533" },
-          { institution: "印度国防部", title: "OFB Gets Bulk Production Clearance for Dhanush Artillery Gun", published: "2019-02-19", type: "政府/监管", url: "https://www.pib.gov.in/newsite/PrintRelease.aspx?lang=2&reg=48&relid=188788" },
-        ],
-      },
-      {
         companyName: "Sulzer Pumps India",
         militaryStatus: "涉军企业",
         chineseName: "苏尔寿泵业印度私人有限公司",
@@ -749,86 +881,7 @@ export const typicalEnterprises: TypicalEnterpriseProduct[] = [
               { title: "大林石化油品储运中心", detail: "已确认石化储运项目；军用流向查否", status: "cleared" },
             ],
           },
-          branches: [
-            {
-              label: "KNOWN END USE / 已知最终用途",
-              title: "苏尔寿泵组 → 台船采购 → 台湾中油大林石化油品储运中心",
-              summary: "按补充材料，台船采购的苏尔寿泵组最终用途指向台湾中油在高雄建设的“高雄港洲际货柜二期大林石化油品储运中心投资计划”；该用途属于石化品储存、管输、码头装船和槽车装卸基础设施。",
-              steps: [
-                {
-                  label: "01 / 上游采购",
-                  title: "Sulzer Pumps India Private Limited 采购中国泵件和电机",
-                  detail: "2025 年 4—6 月，贸易记录显示其与 Sulzer Pumps Suzhou Ltd.（苏州苏尔寿泵业有限公司）之间有泵及备件记录；2025 年电机记录对应 Wolong Electric Nanyang Explosion Protection Group Co., Ltd.（卧龙电气南阳防爆集团股份有限公司）。具体 9/7 条记录的批次口径仍以完整提单核验。",
-                  status: "signal",
-                },
-                {
-                  label: "02 / 印度节点",
-                  title: "Sulzer Pumps India Private Limited 在印度集成泵组",
-                  detail: "产品属性与时间线支持进口泵体、泵轴、电机和备件在印度集成的可能性；是否发生实质加工、由哪一生产或服务主体承接，尚缺装配记录。",
-                  status: "signal",
-                },
-                {
-                  label: "03 / 台船采购",
-                  title: "CSBC Corporation, Taiwan 采购苏尔寿泵组",
-                  detail: "材料称 2025 年 CSBC Corporation, Taiwan（台湾国际造船股份有限公司，台船）从 Sulzer Pumps India Private Limited 接收至少 6 批、11 台/套离心泵组；交易双方实名对应与采购单证仍待核验。",
-                  status: "signal",
-                },
-                {
-                  label: "04 / 计划归属",
-                  title: "台湾中油高雄大林石化油品储运中心投资计划",
-                  detail: "最终用途指向台湾中油在高雄建设的“高雄港洲际货柜二期大林石化油品储运中心投资计划”，对应石化品储存、管输、码头装船和槽车装卸基础设施。",
-                  status: "confirmed",
-                },
-                {
-                  label: "05 / EPC 项目",
-                  title: "KDC1045001 与 KDX0832002 两个统包工程",
-                  detail: "包括“大林石化油品储运中心三区26座石化品储槽统包工程”（项目编号 KDC1045001）和“大林石化油品储运中心槽车装卸工场统包工程”（项目编号 KDX0832002）；不属于油田钻井、原油举升或海上石油开采项目。",
-                  status: "confirmed",
-                },
-              ],
-              boundary: "证据边界：该分支按补充材料作为当前最终用途主链展示；两个 EPC 项目与具体泵组之间的采购合同、设备位号、装船单和现场验收资料仍需补充核验。",
-              sourceLabel: "依据：用户提供 PDF 及补充说明；项目编号与最终用途按用户材料录入",
-            },
-            {
-              label: "SUSPECTED MILITARY END USE / 疑似军用终端",
-              title: "苏尔寿泵组 → 台船 → “奋进魔鬼鱼（Endeavor Manta）”",
-              summary: "无人艇链条保留为疑似关联，用于提示台船涉军装备能力与泵组流向之间的潜在风险；目前没有证据证明这批泵组已经装入该无人艇。",
-              steps: [
-                {
-                  label: "01 / 上游采购",
-                  title: "Sulzer Pumps India Private Limited 采购中国泵件和电机",
-                  detail: "交易记录涉及 Sulzer Pumps Suzhou Ltd.（苏州苏尔寿泵业有限公司）的泵及备件，以及 Wolong Electric Nanyang Explosion Protection Group Co., Ltd.（卧龙电气南阳防爆集团股份有限公司）的电机；具体批次仍需完整提单核验。",
-                  status: "signal",
-                },
-                {
-                  label: "02 / 印度集成",
-                  title: "Sulzer Pumps India Private Limited 集成泵组",
-                  detail: "泵体、泵轴、电机和备件可能在印度形成泵组，但缺少装配、改造和最终客户用途记录。",
-                  status: "signal",
-                },
-                {
-                  label: "03 / 台船接收",
-                  title: "CSBC Corporation, Taiwan 接收泵组",
-                  detail: "材料称台船从 Sulzer Pumps India Private Limited 接收至少 6 批、11 台/套离心泵组；这只能证明采购关系线索，不能直接推出无人艇装配关系。",
-                  status: "signal",
-                },
-                {
-                  label: "04 / 疑似终端",
-                  title: "台船“奋进魔鬼鱼（Endeavor Manta）”军用级无人艇",
-                  detail: "CSBC 官方资料确认该军用级无人船具备模块化酬载，可搭载轻型鱼雷或高爆炸药；泵组是否进入该艇，当前仅为疑似关联。",
-                  status: "verify",
-                },
-                {
-                  label: "05 / 背景放大",
-                  title: "台船海鯤号与 Lockheed Martin 系统",
-                  detail: "公开资料显示 CSBC 建造海鯤号，战斗管理系统由 Lockheed Martin（洛克希德·马丁公司）负责，武器体系涉及 MK-48 系列鱼雷；这是台船军用能力背景，不是泵件进入无人艇的闭环证据。",
-                  status: "verify",
-                },
-              ],
-              boundary: "证据边界：该分支只能作为疑似军用终端风险提示；尚不能确认 Sulzer Pumps India Private Limited 或 CSBC Corporation, Taiwan 将上述泵组用于 Endeavor Manta、海鯤号或其他军用平台，亦不能据此认定存在规避出口管制行为。",
-              sourceLabel: "依据：用户提供 PDF；ImportGenius；Sulzer Ltd.、CSBC Corporation, Taiwan、Lockheed Martin 公开资料",
-            },
-          ],
+          branches: [],
         },
         sources: [
           reportSource,

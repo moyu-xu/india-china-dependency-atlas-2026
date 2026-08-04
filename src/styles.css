@@ -3330,15 +3330,122 @@ footer {
   line-height: 1.75;
 }
 
+.enterprise-mechanism-group {
+  display: grid;
+  gap: 12px;
+  margin: 8px 0 10px;
+  padding: 18px;
+  border-radius: 24px;
+  background: rgba(18,35,55,.045);
+}
+
+.enterprise-mechanism-group > .enterprise-mechanism {
+  margin: 0;
+  padding: 8px;
+  background: transparent;
+  box-shadow: none;
+}
+
 .enterprise-mechanism {
   display: grid;
-  grid-template-columns: minmax(220px,1fr) 38px minmax(270px,1.15fr) 38px minmax(270px,1.15fr) minmax(250px,1fr);
+  grid-template-columns: minmax(240px,.9fr) 58px minmax(280px,1fr) minmax(340px,1.25fr);
   align-items: center;
-  gap: 16px;
+  gap: 0;
   margin: 8px 0 10px;
   padding: 26px;
   border-radius: 24px;
   background: rgba(18,35,55,.045);
+}
+
+.enterprise-mechanism-suppliers-cluster,
+.enterprise-mechanism-outcome {
+  min-width: 0;
+}
+
+.enterprise-mechanism-supplier-list {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  padding-right: 46px;
+}
+
+.enterprise-mechanism-node.supplier::after {
+  position: absolute;
+  top: 50%;
+  right: -42px;
+  width: 42px;
+  border-top: 1px solid rgba(137,106,66,.55);
+  content: "";
+}
+
+.enterprise-mechanism-fanin {
+  position: relative;
+  align-self: stretch;
+  min-height: 100%;
+}
+
+.enterprise-mechanism-fanin::before {
+  position: absolute;
+  top: 9%;
+  bottom: 9%;
+  left: 0;
+  border-left: 1px solid rgba(137,106,66,.55);
+  content: "";
+}
+
+.enterprise-mechanism-fanin::after {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  border-top: 1px solid rgba(137,106,66,.55);
+  content: "";
+}
+
+.enterprise-mechanism-outcome {
+  display: grid;
+  grid-template-columns: 32px minmax(0,1fr) 32px minmax(0,1fr);
+  align-content: center;
+  gap: 12px 10px;
+}
+
+.enterprise-mechanism-outcome > .enterprise-mechanism-arrow {
+  align-self: center;
+}
+
+.enterprise-mechanism-outcome > .enterprise-mechanism-node,
+.enterprise-mechanism-outcome > .enterprise-mechanism-endpoints {
+  grid-column: auto;
+}
+
+.enterprise-mechanism-outcome > .enterprise-mechanism-endpoints {
+  width: 100%;
+}
+
+.enterprise-mechanism-outcome > .enterprise-mechanism-node.downstream {
+  grid-column: 4;
+}
+
+/* When no endpoint list is available, let the downstream product card use the
+   full outcome column instead of being squeezed into the last half. */
+.enterprise-mechanism-outcome:has(> .enterprise-mechanism-endpoints:empty) {
+  grid-template-columns: 32px minmax(0, 1fr);
+}
+
+.enterprise-mechanism-outcome:has(> .enterprise-mechanism-endpoints:empty) > .enterprise-mechanism-arrow.placeholder,
+.enterprise-mechanism-outcome:has(> .enterprise-mechanism-endpoints:empty) > .enterprise-mechanism-endpoints {
+  display: none;
+}
+
+.enterprise-mechanism-outcome:has(> .enterprise-mechanism-endpoints:empty) > .enterprise-mechanism-node.downstream {
+  grid-column: 2;
+}
+
+.enterprise-mechanism-group > .enterprise-mechanism {
+  margin: 0;
+  padding: 8px;
+  background: transparent;
+  box-shadow: none;
 }
 
 .enterprise-mechanism-suppliers,
@@ -3369,6 +3476,10 @@ footer {
   box-shadow: 0 7px 18px rgba(22,35,53,.06);
 }
 
+.enterprise-mechanism-node > div {
+  min-width: 0;
+}
+
 .enterprise-mechanism-node.hub {
   padding: 22px 19px;
   background: rgba(82,116,95,.12);
@@ -3377,6 +3488,59 @@ footer {
 
 .enterprise-mechanism-node.downstream {
   background: rgba(77,99,139,.1);
+}
+
+/* BEL's evidence path is a literal left-to-right handoff: cell, broker,
+   Indian integrator, battery pack, then the named military endpoint. */
+.enterprise-mechanism-horizontal {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 24px;
+}
+
+.enterprise-mechanism-horizontal .horizontal-node {
+  flex: 1 1 0;
+  min-width: 176px;
+  min-height: 154px;
+  align-content: center;
+}
+
+.enterprise-mechanism-horizontal .horizontal-node.hub {
+  flex-basis: 1.25fr;
+}
+
+.enterprise-mechanism-horizontal .horizontal-node.downstream {
+  flex-basis: 1.15fr;
+}
+
+.enterprise-mechanism-horizontal .horizontal-chain-arrow {
+  display: grid;
+  flex: 0 0 24px;
+  place-items: center;
+  align-self: center;
+  font-size: 25px;
+}
+
+.enterprise-mechanism-horizontal .horizontal-chain-arrow::after {
+  width: 30px;
+}
+
+.enterprise-mechanism-horizontal .horizontal-chain-arrow.pending {
+  color: rgba(151, 111, 62, .72);
+  border-top: 1px dashed rgba(151, 111, 62, .5);
+  font-size: 0;
+  min-height: 1px;
+}
+
+.enterprise-mechanism-horizontal .horizontal-chain-arrow.pending::after {
+  display: none;
+}
+
+.enterprise-mechanism-horizontal .horizontal-node.downstream.verify {
+  border: 1px dashed rgba(151, 111, 62, .58);
+  box-shadow: none;
 }
 
 .enterprise-mechanism-node.endpoint.confirmed {
@@ -3403,6 +3567,8 @@ footer {
   color: var(--ink);
   font-size: 17px;
   line-height: 1.4;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .enterprise-mechanism-node p {
@@ -3410,6 +3576,12 @@ footer {
   color: var(--muted);
   font-size: 14px;
   line-height: 1.55;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.enterprise-mechanism-node.supplier p {
+  font-size: 15px;
 }
 
 .enterprise-mechanism-status {
@@ -3433,6 +3605,10 @@ footer {
   text-align: center;
 }
 
+.enterprise-mechanism-arrow.placeholder {
+  visibility: hidden;
+}
+
 .enterprise-mechanism-endpoints {
   position: relative;
   padding-left: 20px;
@@ -3447,6 +3623,179 @@ footer {
   content: "↗\A↘";
   white-space: pre;
   font: 800 20px/2 Arial, sans-serif;
+}
+
+.enterprise-mechanism-endpoints.standalone::before {
+  display: none;
+}
+
+/* Evidence-chain treatment: soft connectors, quiet motion, clear confirmed nodes. */
+.enterprise-mechanism {
+  --evidence-line: rgba(137,106,66,.58);
+  --evidence-line-soft: rgba(137,106,66,.24);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid rgba(137,106,66,.16);
+  background:
+    radial-gradient(circle at 76% 18%, rgba(82,116,95,.09), transparent 32%),
+    linear-gradient(135deg, rgba(255,255,255,.62), rgba(242,237,226,.62));
+}
+
+.enterprise-mechanism::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border: 1px solid rgba(255,255,255,.5);
+  border-radius: inherit;
+  content: "";
+  pointer-events: none;
+}
+
+.enterprise-mechanism-supplier-list::before {
+  display: none;
+}
+
+.enterprise-mechanism-supplier-list {
+  --supplier-row-height: 176px;
+  align-self: stretch;
+  align-content: space-between;
+  justify-items: stretch;
+  min-width: 0;
+  grid-auto-rows: var(--supplier-row-height);
+  padding-top: 22px;
+  padding-bottom: 22px;
+}
+
+.enterprise-mechanism-node.supplier {
+  height: auto;
+  min-height: var(--supplier-row-height);
+  align-content: center;
+}
+
+.enterprise-mechanism-supplier-curves {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 114px;
+  height: 100%;
+  right: -68px;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.enterprise-mechanism-supplier-curves path {
+  fill: none;
+  stroke: var(--evidence-line);
+  stroke-linecap: round;
+  stroke-width: 4;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 120;
+  stroke-dashoffset: 120;
+  animation: evidence-curve-in .8s cubic-bezier(.2,.8,.2,1) forwards;
+}
+
+.enterprise-mechanism-supplier-curves .supplier-main-arrow {
+  stroke-width: 5.5;
+}
+
+.enterprise-mechanism-supplier-curves .supplier-merge-dot {
+  fill: #896a42;
+  stroke: rgba(255,255,255,.9);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.enterprise-mechanism-supplier-curves marker path {
+  fill: var(--evidence-line);
+  stroke: none;
+}
+
+.enterprise-mechanism-fanin::before,
+.enterprise-mechanism-fanin::after {
+  display: none;
+}
+
+.enterprise-mechanism-fanin::before {
+  top: 12%;
+  bottom: 12%;
+  left: 0;
+  width: 2px;
+  border-radius: 999px;
+}
+
+.enterprise-mechanism-fanin::after {
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--evidence-line-soft), var(--evidence-line));
+}
+
+.enterprise-mechanism-arrow {
+  position: relative;
+  color: var(--accent);
+  filter: drop-shadow(0 3px 5px rgba(137,106,66,.14));
+  animation: evidence-arrow-in .7s cubic-bezier(.2,.8,.2,1) both;
+}
+
+.enterprise-mechanism-arrow:not(.placeholder)::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 24px;
+  height: 8px;
+  border-top: 1px solid rgba(137,106,66,.38);
+  border-radius: 0 8px 8px 0;
+  content: "";
+  transform: translate(-50%, -50%);
+  z-index: -1;
+}
+
+.enterprise-mechanism-node {
+  border: 1px solid rgba(255,255,255,.6);
+  transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+  animation: evidence-node-in .55s cubic-bezier(.2,.8,.2,1) both;
+}
+
+.enterprise-mechanism-node:hover {
+  border-color: rgba(137,106,66,.34);
+  box-shadow: 0 13px 28px rgba(22,35,53,.12);
+  transform: translateY(-2px);
+}
+
+.enterprise-mechanism-supplier-list .enterprise-mechanism-node:nth-child(1) { animation-delay: .04s; }
+.enterprise-mechanism-supplier-list .enterprise-mechanism-node:nth-child(2) { animation-delay: .10s; }
+.enterprise-mechanism-supplier-list .enterprise-mechanism-node:nth-child(3) { animation-delay: .16s; }
+.enterprise-mechanism-supplier-list .enterprise-mechanism-node:nth-child(4) { animation-delay: .22s; }
+.enterprise-mechanism-supplier-list .enterprise-mechanism-node:nth-child(5) { animation-delay: .28s; }
+.enterprise-mechanism-node.hub { animation-delay: .34s; }
+.enterprise-mechanism-endpoints .enterprise-mechanism-node { animation-delay: .46s; }
+.enterprise-mechanism-node.downstream { animation-delay: .58s; }
+
+@keyframes evidence-node-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes evidence-arrow-in {
+  from { opacity: 0; transform: translateX(-6px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes evidence-curve-in {
+  to { stroke-dashoffset: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .enterprise-mechanism-node,
+  .enterprise-mechanism-arrow,
+  .enterprise-mechanism-supplier-curves path {
+    animation: none;
+    transition: none;
+  }
 }
 
 .enterprise-risk-branches {
@@ -3860,8 +4209,62 @@ footer {
     gap: 10px;
   }
 
+  .enterprise-mechanism-supplier-list {
+    --supplier-row-height: auto;
+    grid-auto-rows: auto;
+    padding-right: 0;
+  }
+
+  .enterprise-mechanism-supplier-list::before,
+  .enterprise-mechanism-node.supplier::after,
+  .enterprise-mechanism-supplier-curves {
+    display: none;
+  }
+
+  .enterprise-mechanism-fanin {
+    min-height: 54px;
+  }
+
+  .enterprise-mechanism-fanin::before {
+    top: 0;
+    right: auto;
+    bottom: 0;
+    left: 50%;
+    border-left: 1px solid rgba(137,106,66,.55);
+  }
+
+  .enterprise-mechanism-fanin::after {
+    top: auto;
+    right: auto;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    border-top: 0;
+  }
+
+  .enterprise-mechanism-outcome {
+    grid-template-columns: 1fr;
+  }
+
+  .enterprise-mechanism-outcome > .enterprise-mechanism-node,
+  .enterprise-mechanism-outcome > .enterprise-mechanism-endpoints {
+    grid-column: 1;
+  }
+
+  .enterprise-mechanism-group {
+    padding: 12px;
+  }
+
+  .enterprise-mechanism-group > .enterprise-mechanism {
+    padding: 4px;
+  }
+
   .enterprise-mechanism-arrow {
     transform: rotate(90deg);
+  }
+
+  .enterprise-mechanism-arrow.placeholder {
+    display: none;
   }
 
   .enterprise-mechanism-endpoints {

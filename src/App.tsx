@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useState } from "react";
+import { Fragment, memo, useEffect, useMemo, useState } from "react";
 import { MONTHLY_SOURCE_ACCESSED, MONTHLY_SOURCE_LABEL, MONTHLY_SOURCE_URL, monthlyTradeById, type MonthlyTradePoint } from "./data/monthlyTrade";
 import chinaCustomsHs8 from "./data/chinaCustomsHs8.json";
 import { enterpriseProductAliasByCommodityId, enterpriseProductsBySlug, typicalEnterprises, type EnterpriseMechanism, type EnterpriseRiskChainStep, type TypicalEnterprise, type TypicalEnterpriseProduct } from "./data/typicalEnterprises";
@@ -1288,27 +1288,33 @@ const riskStatusLabel: Record<EnterpriseRiskChainStep["status"] | "cleared", str
 };
 
 function EnterpriseRiskChain({ chain }: { chain: NonNullable<TypicalEnterprise["riskChain"]> }) {
+  const mechanisms = [
+    ...(chain.mechanism ? [chain.mechanism] : []),
+    ...(chain.mechanisms ?? []),
+  ];
   return <section className="enterprise-risk-chain" aria-label="机制流程图">
     <div className="enterprise-risk-chain-heading">
       <div><span>SUPPLY CHAIN / EVIDENCE FLOW</span><h4>{chain.title}</h4></div>
       <strong>证据链</strong>
     </div>
     <p className="enterprise-risk-chain-summary">{chain.summary}</p>
-    {chain.mechanism&&<EnterpriseMechanismFlow mechanism={chain.mechanism} />}
-    <div className="enterprise-risk-branches">
+    {mechanisms.length > 0 && <div className="enterprise-mechanism-group">
+      <EnterpriseMechanismCluster mechanisms={mechanisms} />
+    </div>}
+    {chain.branches.length > 0 && <div className="enterprise-risk-branches">
       {chain.branches.map((branch, branchIndex) => {
         const isSuspected = /SUSPECTED|疑似|待核验/.test(branch.label);
         return <article className={`enterprise-risk-branch ${isSuspected ? "suspected" : "known"}`} key={`${branch.title}-${branchIndex}`}>
           <div className="enterprise-risk-branch-heading">
             <div><span>{branch.label}</span><h5>{branch.title}</h5></div>
-            <strong>{isSuspected ? "待核验" : "已确认"}</strong>
+            {isSuspected && <strong>待核验</strong>}
           </div>
           <p className="enterprise-risk-branch-summary">{branch.summary}</p>
           <div className="enterprise-risk-chain-track">
             {branch.steps.map((step, stepIndex) => <article className={`enterprise-risk-step ${step.status}`} key={`${step.title}-${stepIndex}`}>
               <div className="enterprise-risk-step-meta">
                 <span><i className="enterprise-risk-step-icon" aria-hidden="true">{String(stepIndex + 1).padStart(2, "0")}</i>{step.label}</span>
-                <em>{riskStatusLabel[step.status]}</em>
+                {step.status !== "confirmed" && <em>{riskStatusLabel[step.status]}</em>}
               </div>
               <h6>{step.title}</h6>
               <details className="enterprise-risk-step-proof">
@@ -1320,38 +1326,82 @@ function EnterpriseRiskChain({ chain }: { chain: NonNullable<TypicalEnterprise["
           <div className="enterprise-risk-boundary"><strong>边界</strong><span>{branch.boundary}</span><small>{branch.sourceLabel}</small></div>
         </article>;
       })}
-    </div>
+    </div>}
   </section>;
 }
 
-function EnterpriseMechanismFlow({ mechanism }: { mechanism: EnterpriseMechanism }) {
-  return <div className="enterprise-mechanism" aria-label="机制流程图">
-    <div className="enterprise-mechanism-suppliers">
-      <span className="enterprise-mechanism-caption">中国供应商</span>
-      {mechanism.suppliers.map((node,index)=><article className="enterprise-mechanism-node supplier" key={`${node.title}-${index}`}>
+function EnterpriseMechanismCluster({ mechanisms }: { mechanisms: EnterpriseMechanism[] }) {
+  const primary = mechanisms[0];
+  if (primary.layout === "horizontal") {
+    const horizontalNodes = [
+      ...primary.suppliers,
+      primary.hub,
+      primary.downstream,
+      ...primary.endpoints,
+    ];
+    return <div className="enterprise-mechanism enterprise-mechanism-horizontal" aria-label="产品到军用终端的水平链条">
+      {horizontalNodes.map((node, index) => <Fragment key={`${node.title}-${index}`}>
+        <article className={`enterprise-mechanism-node horizontal-node ${node === primary.hub ? "hub" : node === primary.downstream ? "downstream" : primary.endpoints.includes(node) ? "endpoint" : "supplier"} ${node.status ?? ""}`}>
+          <span className="enterprise-mechanism-icon" aria-hidden="true">{node.status === "confirmed" ? "✓" : "◇"}</span>
+          <div>{index === 0 && <span className="enterprise-mechanism-caption">{primary.supplierCaption ?? "中国侧电芯节点"}</span>}{node === primary.hub && <span className="enterprise-mechanism-caption">{primary.hubCaption ?? "印度承接企业"}</span>}{node === primary.downstream && <span className="enterprise-mechanism-caption">{primary.downstreamCaption ?? "电池包节点"}</span>}<strong>{node.title}</strong><p>{node.detail}</p></div>
+          {node.status !== "confirmed" && <em className={`enterprise-mechanism-status ${node.status ?? "signal"}`}>{node.status ? riskStatusLabel[node.status] : "筛查信号"}</em>}
+        </article>
+        {index < horizontalNodes.length - 1 && node !== primary.downstream && <span className={`enterprise-mechanism-arrow horizontal-chain-arrow ${horizontalNodes[index + 1].status !== "confirmed" ? "pending" : ""}`} aria-hidden="true">→</span>}
+      </Fragment>)}
+    </div>;
+  }
+  const suppliers = mechanisms
+    .flatMap((mechanism) => mechanism.suppliers)
+    .filter((node) => node.title !== "供应来源未披露");
+  const supplierCaption = mechanisms.length > 1 ? "产品" : (primary.supplierCaption ?? "中国供应商");
+  const supplierRowHeight = 176;
+  const supplierGap = 12;
+  const supplierInset = 22;
+  const supplierListHeight = supplierInset * 2 + suppliers.length * supplierRowHeight + Math.max(0, suppliers.length - 1) * supplierGap;
+  const supplierCurveYs = suppliers.map((_, index) => ((supplierInset + supplierRowHeight / 2 + index * (supplierRowHeight + supplierGap)) / supplierListHeight) * 100);
+
+  return <div className="enterprise-mechanism" aria-label="产品到 JCB 的机制流程图">
+    <div className="enterprise-mechanism-suppliers-cluster">
+      <span className="enterprise-mechanism-caption">{supplierCaption}</span>
+      <div className="enterprise-mechanism-supplier-list">
+      {suppliers.map((node,index)=><article className="enterprise-mechanism-node supplier" key={`${node.title}-${index}`}>
         <span className="enterprise-mechanism-icon" aria-hidden="true">{index===0 ? "⌁" : "◈"}</span>
-        <div><strong>{node.title}</strong><p>{node.detail}</p></div>
-        <em className={`enterprise-mechanism-status ${node.status ?? "signal"}`}>{node.status ? riskStatusLabel[node.status] : "筛查信号"}</em>
+        <div><strong>{node.title}</strong>{node.detail && <p>{node.detail}</p>}</div>
+        {node.status !== "confirmed" && <em className={`enterprise-mechanism-status ${node.status ?? "signal"}`}>{node.status ? riskStatusLabel[node.status] : "筛查信号"}</em>}
       </article>)}
+      {suppliers.length > 0 && <svg className="enterprise-mechanism-supplier-curves" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <marker id="supplier-arrowhead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M 0 0 L 10 5 L 0 10 z" />
+          </marker>
+        </defs>
+        {supplierCurveYs.map((y,index)=><path className="supplier-merge-arrow" key={index} d={`M 0 ${y} C 24 ${y}, 34 50, 52 50`} />)}
+        <circle className="supplier-merge-dot" cx="56" cy="50" r="4.5" />
+        <path className="supplier-main-arrow" d="M 60 50 L 98 50" markerEnd="url(#supplier-arrowhead)" />
+      </svg>}
+      </div>
     </div>
-    <span className="enterprise-mechanism-arrow" aria-hidden="true">→</span>
+    <div className="enterprise-mechanism-fanin" aria-hidden="true" />
     <article className="enterprise-mechanism-node hub">
       <span className="enterprise-mechanism-icon" aria-hidden="true">◎</span>
-      <div><span className="enterprise-mechanism-caption">印度承接</span><strong>{mechanism.hub.title}</strong><p>{mechanism.hub.detail}</p></div>
-      <em className={`enterprise-mechanism-status ${mechanism.hub.status ?? "signal"}`}>{mechanism.hub.status ? riskStatusLabel[mechanism.hub.status] : "筛查信号"}</em>
+      <div><span className="enterprise-mechanism-caption">{primary.hubCaption ?? "印度承接"}</span><strong>{primary.hub.title}</strong><p>{primary.hub.detail}</p></div>
+      {primary.hub.status !== "confirmed" && <em className={`enterprise-mechanism-status ${primary.hub.status ?? "signal"}`}>{primary.hub.status ? riskStatusLabel[primary.hub.status] : "筛查信号"}</em>}
     </article>
-    <span className="enterprise-mechanism-arrow" aria-hidden="true">→</span>
-    <article className="enterprise-mechanism-node downstream">
-      <span className="enterprise-mechanism-icon" aria-hidden="true">⇢</span>
-      <div><span className="enterprise-mechanism-caption">台湾接收</span><strong>{mechanism.downstream.title}</strong><p>{mechanism.downstream.detail}</p></div>
-      <em className={`enterprise-mechanism-status ${mechanism.downstream.status ?? "signal"}`}>{mechanism.downstream.status ? riskStatusLabel[mechanism.downstream.status] : "筛查信号"}</em>
-    </article>
-    <div className="enterprise-mechanism-endpoints">
-      {mechanism.endpoints.map((node,index)=><article className={`enterprise-mechanism-node endpoint ${node.status ?? "verify"}`} key={`${node.title}-${index}`}>
-        <span className="enterprise-mechanism-icon" aria-hidden="true">{node.status === "confirmed" ? "✓" : "?"}</span>
-        <div><strong>{node.title}</strong><p>{node.detail}</p></div>
-        <em className={`enterprise-mechanism-status ${node.status ?? "verify"}`}>{node.status ? riskStatusLabel[node.status] : "待核验"}</em>
-      </article>)}
+    <div className="enterprise-mechanism-outcome">
+      <span className="enterprise-mechanism-arrow placeholder" aria-hidden="true" />
+      <div className={`enterprise-mechanism-endpoints ${primary.connectEndpoints === false ? "standalone" : ""}`}>
+        {primary.endpoints.map((node,index)=><article className={`enterprise-mechanism-node endpoint ${node.status ?? "verify"}`} key={`${node.title}-${index}`}>
+          <span className="enterprise-mechanism-icon" aria-hidden="true">{node.status === "confirmed" ? "✓" : "?"}</span>
+          <div><strong>{node.title}</strong><p>{node.detail}</p></div>
+          {node.status !== "confirmed" && <em className={`enterprise-mechanism-status ${node.status ?? "verify"}`}>{node.status ? riskStatusLabel[node.status] : "待核验"}</em>}
+        </article>)}
+      </div>
+      {primary.connectDownstream !== false ? <span className="enterprise-mechanism-arrow" aria-hidden="true">→</span> : <span className="enterprise-mechanism-arrow placeholder" aria-hidden="true" />}
+      <article className="enterprise-mechanism-node downstream">
+        <span className="enterprise-mechanism-icon" aria-hidden="true">⇢</span>
+        <div><span className="enterprise-mechanism-caption">{primary.downstreamCaption ?? "台湾接收"}</span><strong>{primary.downstream.title}</strong><p>{primary.downstream.detail}</p></div>
+        {primary.downstream.status !== "confirmed" && <em className={`enterprise-mechanism-status ${primary.downstream.status ?? "signal"}`}>{primary.downstream.status ? riskStatusLabel[primary.downstream.status] : "筛查信号"}</em>}
+      </article>
     </div>
   </div>;
 }
