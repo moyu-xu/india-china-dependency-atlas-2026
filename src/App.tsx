@@ -1293,11 +1293,13 @@ function EnterpriseRiskChain({ chain }: { chain: NonNullable<TypicalEnterprise["
     ...(chain.mechanisms ?? []),
   ];
   return <section className="enterprise-risk-chain" aria-label="机制流程图">
-    <div className="enterprise-risk-chain-heading">
-      <div><span>SUPPLY CHAIN / EVIDENCE FLOW</span><h4>{chain.title}</h4></div>
-      <strong>证据链</strong>
-    </div>
-    <p className="enterprise-risk-chain-summary">{chain.summary}</p>
+    {(chain.title || chain.summary) && <>
+      <div className="enterprise-risk-chain-heading">
+        <div><span>SUPPLY CHAIN / EVIDENCE FLOW</span>{chain.title && <h4>{chain.title}</h4>}</div>
+        <strong>证据链</strong>
+      </div>
+      {chain.summary && <p className="enterprise-risk-chain-summary">{chain.summary}</p>}
+    </>}
     {mechanisms.length > 0 && <div className="enterprise-mechanism-group">
       <EnterpriseMechanismCluster mechanisms={mechanisms} />
     </div>}

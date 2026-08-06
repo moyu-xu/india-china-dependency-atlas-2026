@@ -44,8 +44,8 @@ export type EnterpriseMechanism = {
 };
 
 export type EnterpriseRiskChain = {
-  title: string;
-  summary: string;
+  title?: string;
+  summary?: string;
   mechanism?: EnterpriseMechanism;
   mechanisms?: EnterpriseMechanism[];
   branches: EnterpriseRiskChainBranch[];
@@ -394,8 +394,6 @@ export const typicalEnterprises: TypicalEnterpriseProduct[] = [
         evidenceNote: "已确认供应商、进口商、到货日期、商品描述、HS 90029000及Paras的光学制造能力；采购订单、项目BOM、生产领料单、装调报告和样机配置尚未公开。",
         evidenceLevel: "高",
         riskChain: {
-          title: "中国S2光学组件 → Paras Defence → DRDO/CHESS激光防空项目",
-          summary: "中国供应商向Paras交付S2 VIS AFOCAL ZOOM LENS系列组件；Paras具备光学制造和系统集成能力。结合CHESS合同、后续防空光学订单与DRDO公开光电跟踪架构，相关组件高度疑似进入激光防空系统的可见光搜索与精跟踪通道，但尚未完成具体装机批次的直接证据闭环。",
           mechanism: {
             layout: "horizontal",
             supplierCaption: "中国供应来源",
