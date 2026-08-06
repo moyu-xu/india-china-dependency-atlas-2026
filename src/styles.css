@@ -3505,6 +3505,12 @@ footer {
   min-width: 176px;
   min-height: 154px;
   align-content: center;
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.enterprise-mechanism-horizontal .horizontal-node > .enterprise-mechanism-status {
+  grid-column: 2;
+  justify-self: start;
 }
 
 .enterprise-mechanism-horizontal .horizontal-node.hub {

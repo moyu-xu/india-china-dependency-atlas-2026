@@ -1360,7 +1360,7 @@ function EnterpriseMechanismCluster({ mechanisms }: { mechanisms: EnterpriseMech
   const supplierListHeight = supplierInset * 2 + suppliers.length * supplierRowHeight + Math.max(0, suppliers.length - 1) * supplierGap;
   const supplierCurveYs = suppliers.map((_, index) => ((supplierInset + supplierRowHeight / 2 + index * (supplierRowHeight + supplierGap)) / supplierListHeight) * 100);
 
-  return <div className="enterprise-mechanism" aria-label="产品到 JCB 的机制流程图">
+  return <div className="enterprise-mechanism" aria-label="产品供应链证据流程图">
     <div className="enterprise-mechanism-suppliers-cluster">
       <span className="enterprise-mechanism-caption">{supplierCaption}</span>
       <div className="enterprise-mechanism-supplier-list">
@@ -1576,8 +1576,9 @@ function Home() {
             <ul>
               {militaryCaseProducts.map(({ product, enterprises }) => {
                 const commodityId = commodityIdByEnterpriseProductId[product.productId];
+                const href = commodityId ? `#commodity-${commodityId}` : enterpriseHref(product.slug);
                 return <li key={`military-case-${product.productId}`}>
-                  <a href={`#commodity-${commodityId}`} onClick={event=>focusMatrixCommodity(commodityId,event)}>
+                  <a href={href} onClick={commodityId ? event=>focusMatrixCommodity(commodityId,event) : undefined}>
                     {product.productName}：{enterprises.map(enterprise=>enterprise.chineseName).join("、")}
                   </a>
                 </li>;
